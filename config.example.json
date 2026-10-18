@@ -1,0 +1,13 @@
+{
+  "calendars": [
+    {
+      "name": "Personal",
+      "url": "https://calendar.google.com/calendar/ical/YOUR_ID/private-YOUR_SECRET/basic.ics",
+      "color": "#7aa2f7"
+    },
+    {
+      "name": "Uni (local .ics file)",
+      "url": "/home/you/calendars/uni.ics"
+    }
+  ]
+}

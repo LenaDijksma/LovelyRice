@@ -1,0 +1,8 @@
+{
+  "name": "gruvbox",
+  "colors": { "bg": "#282828", "surface": "#3c3836", "fg": "#ebdbb2", "dim": "#928374",
+              "accent": "#fabd2f", "accent2": "#fe8019", "warn": "#fb4934" },
+  "font": "JetBrains Mono",
+  "opacity": 0.95,
+  "shadow": 0.55
+}

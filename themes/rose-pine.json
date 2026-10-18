@@ -1,0 +1,8 @@
+{
+  "name": "rose-pine",
+  "colors": { "bg": "#191724", "surface": "#26233a", "fg": "#e0def4", "dim": "#6e6a86",
+              "accent": "#ebbcba", "accent2": "#c4a7e7", "warn": "#f6c177" },
+  "font": "JetBrains Mono",
+  "opacity": 0.94,
+  "shadow": 0.60
+}

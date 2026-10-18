@@ -1,0 +1,119 @@
+#!/bin/sh
+# lovelyrice — command-line control for the LovelyRice shell.
+#
+#   lovelyrice                 start the shell (same as `lovelyrice start`)
+#   lovelyrice start|stop|restart|status
+#   lovelyrice toggle|settings|calendar|lock|overview|dashboard|control|media|keys|network|bluetooth
+#   lovelyrice open <mode>     open the palette on a mode: scheme, wallpaper, clip, music, windows, doctor, ...
+#   lovelyrice theme <name|next>      set or cycle the theme
+#   lovelyrice screenshot [region|screen]     lovelyrice record [region]
+#   lovelyrice music [toggle|next|prev]
+#   lovelyrice dnd|mic|power-profile|match-wallpaper|run-hooks
+#   lovelyrice sync            re-apply the theme to foot, GTK apps, fastfetch (what happens on every theme change)
+#   lovelyrice setup [foot|gtk|greet|all] [--remove]   hook the themed files into foot.ini, gtk.css and your shell rc
+#   lovelyrice fetch           fastfetch with the LovelyRice cat and theme colors
+#   lovelyrice greet           what a new foot window runs (see `setup greet`): theme colors, then `fetch`
+#   lovelyrice colors          print the theme as terminal escape codes (recolors the terminal it is run in)
+#   lovelyrice logo            print the path of the themed SVG logo
+#   lovelyrice ipc <function> [args...]      any function of the `rice` IPC target
+#   lovelyrice doctor          check which optional tools are installed
+#   lovelyrice log             follow the shell log
+#   lovelyrice version | help
+
+set -u
+
+# These three must be fast and quiet (they run when a terminal opens), so they come before the shell lookup.
+state="$HOME/.local/state/lovelyrice"; gen="$state/generated"
+case "${1:-}" in
+    colors) [ -f "$gen/colors.osc" ] && cat "$gen/colors.osc"; exit 0 ;;
+    greet)
+        [ -f "$gen/colors.osc" ] && cat "$gen/colors.osc"
+        [ -n "${LR_NO_FETCH:-}" ] && exit 0
+        [ -f "$gen/fastfetch.jsonc" ] && command -v fastfetch >/dev/null 2>&1 && fastfetch --config "$gen/fastfetch.jsonc"
+        exit 0 ;;
+    fetch)
+        command -v fastfetch >/dev/null 2>&1 || { echo "lovelyrice: fastfetch is not installed (sudo pacman -S fastfetch)" >&2; exit 1; }
+        [ -f "$gen/fastfetch.jsonc" ] || { echo "lovelyrice: no fastfetch config yet - start LovelyRice (lovelyrice start) or run: lovelyrice sync" >&2; exit 1; }
+        shift; exec fastfetch --config "$gen/fastfetch.jsonc" "$@" ;;
+    logo)
+        [ -f "$gen/logo.svg" ] && { echo "$gen/logo.svg"; exit 0; }
+        echo "lovelyrice: no themed logo yet - start LovelyRice first (the plain one is assets/logo.svg)" >&2; exit 1 ;;
+esac
+
+# Where is the shell? 1. $LOVELYRICE_DIR  2. ~/.config/quickshell/lovelyrice (install.sh)  3. next to this script  4. the system package
+self=$(readlink -f "$0" 2>/dev/null || echo "$0")
+here=$(dirname "$self")
+find_dir() {
+    for d in "${LOVELYRICE_DIR:-}" \
+             "${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/lovelyrice" \
+             "$here/.." \
+             /usr/share/lovelyrice; do
+        [ -n "$d" ] && [ -f "$d/shell.qml" ] && { (cd "$d" && pwd -P); return 0; }
+    done
+    return 1
+}
+dir=$(find_dir) || { echo "lovelyrice: can't find the shell (shell.qml). Set LOVELYRICE_DIR." >&2; exit 1; }
+
+# `qs -c lovelyrice` when the config is installed under that name, otherwise `qs -p <dir>`.
+if [ "${LOVELYRICE_DIR:-}" = "" ] && { [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/lovelyrice/shell.qml" ] || [ -f /etc/xdg/quickshell/lovelyrice/shell.qml ]; }; then
+    sel="-c lovelyrice"
+else
+    sel="-p $dir"
+fi
+qs_() { command -v qs >/dev/null 2>&1 || { echo "lovelyrice: quickshell (qs) is not installed" >&2; exit 1; }; qs $sel "$@"; }
+rice() { qs_ ipc call rice "$@"; }
+running() { qs_ ipc show >/dev/null 2>&1; }
+
+cmd="${1:-start}"; [ $# -gt 0 ] && shift
+
+case "$cmd" in
+    start)
+        if running; then echo "LovelyRice is already running."; exit 0; fi
+        exec qs $sel "$@" ;;
+    stop|quit)
+        qs_ kill ;;
+    restart)
+        qs_ kill 2>/dev/null; sleep 0.3
+        nohup qs $sel >/dev/null 2>&1 &
+        echo "LovelyRice restarted." ;;
+    status)
+        if running; then echo "LovelyRice is running ($dir)"; else echo "LovelyRice is not running"; exit 1; fi ;;
+    log)
+        exec qs $sel log -f ;;
+    reload)
+        # qs reloads by itself when a file changes; this forces it
+        qs_ kill 2>/dev/null; sleep 0.3; nohup qs $sel >/dev/null 2>&1 & ;;
+
+    toggle|palette)      rice toggle ;;
+    settings|calendar|lock|overview|dashboard|control|media|keys|network|bluetooth|notifications)
+                         rice "$cmd" ;;
+    open)                [ $# -ge 1 ] || { echo "usage: lovelyrice open <mode>" >&2; exit 2; }; rice open "$1" ;;
+    dnd|mic)             rice "$cmd" ;;
+    power-profile)       rice powerProfile ;;
+    match-wallpaper)     rice matchWallpaper ;;
+    run-hooks|sync)      rice runHooks ;;
+    setup)
+        sh "$dir/scripts/setup.sh" "$@"; rc=$?
+        # apply the theme right away if the shell is up
+        [ "${1:-}" != "--remove" ] && [ "$rc" = 0 ] && running && rice runHooks >/dev/null 2>&1
+        exit $rc ;;
+    scheme-maker)        rice schemeMaker ;;
+    screenshot)          rice screenshot "${1:-region}" ;;
+    record)              if [ "${1:-}" = region ]; then rice record true; else rice record false; fi ;;
+    music)               rice music "${1:-toggle}" ;;
+    theme)
+        case "${1:-}" in
+            "")   echo "usage: lovelyrice theme <name|next>" >&2; exit 2 ;;
+            next) rice nextTheme ;;
+            *)    rice setTheme "$1" ;;
+        esac ;;
+    ipc)                 rice "$@" ;;
+
+    doctor)              exec sh "$dir/scripts/doctor.sh" --text ;;
+    version|--version|-V)
+        printf 'lovelyrice %s\n' "$(cat "$dir/VERSION" 2>/dev/null || echo unknown)" ;;
+    dir|path)            echo "$dir" ;;
+    help|-h|--help)      sed -n '2,/^$/p' "$self" | sed 's/^# \{0,1\}//' ;;
+    *)
+        echo "lovelyrice: unknown command '$cmd' (try: lovelyrice help)" >&2; exit 2 ;;
+esac

@@ -1,0 +1,8 @@
+{
+  "name": "violet",
+  "colors": { "bg": "#0e0a14", "surface": "#1c1428", "fg": "#ece6f5", "dim": "#7a6e8c",
+              "accent": "#b57aff", "accent2": "#ff6ac1", "warn": "#ffb454" },
+  "font": "JetBrains Mono",
+  "opacity": 0.90,
+  "shadow": 0.70
+}

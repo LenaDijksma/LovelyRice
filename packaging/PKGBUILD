@@ -1,0 +1,63 @@
+# Maintainer: you
+# Build and install from a checkout of LovelyRice:
+#   cd packaging && makepkg -si
+# The package installs the shell to /usr/share/lovelyrice and the `lovelyrice` command to /usr/bin.
+# A symlink in /etc/xdg/quickshell/ makes `qs -c lovelyrice` work for every user, so existing binds keep working.
+# (If you already ran install.sh, your ~/.config/quickshell/lovelyrice link wins; remove it to use the packaged copy.)
+
+pkgname=lovelyrice
+pkgver=0.7.0
+pkgrel=1
+pkgdesc="Keyboard-first Quickshell desktop shell for Hyprland: floating sidebar, launcher, command palette, lock screen"
+arch=('any')
+url="https://github.com/"   # TODO: your repository
+license=('custom')          # TODO: pick a license and add a LICENSE file
+depends=('quickshell' 'hyprland' 'qt6-base' 'qt6-declarative' 'ttf-jetbrains-mono' 'pam')
+optdepends=(
+    'libnotify: notifications from screenshots, timers and the first-run check'
+    'wl-clipboard: copying (calculator, emoji, screenshots, /clip)'
+    'cliphist: /clip clipboard history'
+    'grim: screenshots and the blurred lock screen'
+    'slurp: region screenshots and recordings'
+    'wf-recorder: /record'
+    'brightnessctl: sidebar brightness slider'
+    'wireplumber: /control audio devices and mic'
+    'power-profiles-daemon: /control power profile'
+    'upower: battery in the sidebar'
+    'networkmanager: /network'
+    'bluez-utils: /bluetooth'
+    'imagemagick: colors from the wallpaper'
+    'curl: weather in the dashboard'
+    'xdg-utils: opening web searches and links'
+    'fprintd: fingerprint unlock on the lock screen'
+    'hyprlock: fallback lock screen'
+    'foot: terminal that follows the theme'
+    'fastfetch: themed system info and the terminal greeting'
+    'glib2: gsettings, so GTK apps follow the theme'
+)
+# No source download: the package is built from the checkout this PKGBUILD lives in.
+source=()
+sha256sums=()
+
+package() {
+    local root="$startdir/.."
+    local dest="$pkgdir/usr/share/lovelyrice"
+
+    install -d "$dest"
+    # everything except packaging, git data and local state
+    ( cd "$root" && find . -type f \
+        ! -path './packaging/*' ! -path './.git/*' ! -path './wallpapers/*' ! -name '*.zip' -print0 ) |
+    while IFS= read -r -d '' f; do
+        install -Dm644 "$root/$f" "$dest/$f"
+    done
+    chmod 755 "$dest/scripts/"*.sh "$dest/hooks-examples/"*.sh 2>/dev/null || true   # assets/ stays 644
+
+    install -Dm755 "$root/bin/lovelyrice" "$pkgdir/usr/bin/lovelyrice"
+    rm -f "$dest/bin/lovelyrice" 2>/dev/null; rmdir "$dest/bin" 2>/dev/null || true
+
+    # `qs -c lovelyrice` finds configs in $XDG_CONFIG_DIRS/quickshell
+    install -d "$pkgdir/etc/xdg/quickshell"
+    ln -s /usr/share/lovelyrice "$pkgdir/etc/xdg/quickshell/lovelyrice"
+
+    install -Dm644 "$root/README.md" "$pkgdir/usr/share/doc/lovelyrice/README.md"
+}

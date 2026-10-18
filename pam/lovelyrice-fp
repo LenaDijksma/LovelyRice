@@ -1,0 +1,2 @@
+auth     required   pam_fprintd.so
+account  required   pam_permit.so

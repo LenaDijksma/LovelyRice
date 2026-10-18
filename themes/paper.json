@@ -1,0 +1,8 @@
+{
+  "name": "paper",
+  "colors": { "bg": "#f4f1ea", "surface": "#e4dfd2", "fg": "#222222", "dim": "#8a8576",
+              "accent": "#c2261f", "accent2": "#3b5bdb", "warn": "#b36b00" },
+  "font": "JetBrains Mono",
+  "opacity": 0.97,
+  "shadow": 0.28
+}

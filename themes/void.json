@@ -1,0 +1,8 @@
+{
+  "name": "void",
+  "colors": { "bg": "#0b0b0d", "surface": "#18181c", "fg": "#e6e6e6", "dim": "#6b6b73",
+              "accent": "#e5334b", "accent2": "#8b5cf6", "warn": "#f0a030" },
+  "font": "JetBrains Mono",
+  "opacity": 0.94,
+  "shadow": 0.65
+}
