@@ -1,0 +1,8 @@
+{
+  "name": "ayu-dark",
+  "colors": { "bg": "#0f1419", "surface": "#1a1f29", "fg": "#e6e1cf", "dim": "#5c6773",
+              "accent": "#ffb454", "accent2": "#39bae6", "warn": "#ff8f40" },
+  "font": "JetBrains Mono",
+  "opacity": 0.94,
+  "shadow": 0.6
+}

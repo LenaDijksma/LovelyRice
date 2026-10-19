@@ -6,7 +6,7 @@
 # (If you already ran install.sh, your ~/.config/quickshell/lovelyrice link wins; remove it to use the packaged copy.)
 
 pkgname=lovelyrice
-pkgver=0.7.0
+pkgver=0.8.0
 pkgrel=1
 pkgdesc="Keyboard-first Quickshell desktop shell for Hyprland: floating sidebar, launcher, command palette, lock screen"
 arch=('any')

@@ -1,0 +1,8 @@
+{
+  "name": "tokyo-night-storm",
+  "colors": { "bg": "#24283b", "surface": "#2f334d", "fg": "#c0caf5", "dim": "#565f89",
+              "accent": "#7aa2f7", "accent2": "#bb9af7", "warn": "#e0af68" },
+  "font": "JetBrains Mono",
+  "opacity": 0.94,
+  "shadow": 0.6
+}

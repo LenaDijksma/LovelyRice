@@ -1,0 +1,8 @@
+{
+  "name": "one-dark",
+  "colors": { "bg": "#282c34", "surface": "#353b45", "fg": "#abb2bf", "dim": "#5c6370",
+              "accent": "#61afef", "accent2": "#c678dd", "warn": "#e5c07b" },
+  "font": "JetBrains Mono",
+  "opacity": 0.94,
+  "shadow": 0.6
+}

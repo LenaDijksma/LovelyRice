@@ -46,53 +46,89 @@ PanelWindow {
             anchors { fill: parent; topMargin: 10; bottomMargin: 10; leftMargin: Theme.sideMargin; rightMargin: Theme.sideMargin }
             spacing: 8
 
-            Logo {
-                Layout.alignment: Qt.AlignHCenter
-                visible: Settings.showLogo
+            // The modules, in the order chosen in /settings -> Sidebar. A module that is switched off (or has nothing
+            // to show) is not loaded at all, so it leaves no gap.
+            Repeater {
+                model: Settings.sidebarOrder
+                delegate: Loader {
+                    id: slot
+                    required property string modelData
+                    Layout.fillWidth: true
+                    Layout.fillHeight: modelData === "spacer"
+                    active: win.wanted(modelData)
+                    visible: active
+                    sourceComponent: win.parts[modelData]
+                }
             }
+        }
+    }
 
-            Pill {
-                Layout.fillWidth: true
-                visible: Settings.showWorkspaces
-                Workspaces { Layout.alignment: Qt.AlignHCenter; monitorName: win.modelData.name }
-            }
+    // ---- modules ----
+    function wanted(id) {
+        switch (id) {
+        case "logo":       return Settings.showLogo
+        case "workspaces": return Settings.showWorkspaces
+        case "spacer":     return true
+        case "media":      return Settings.showMedia && Music.player !== null
+        case "status":     return Settings.showStats || Settings.showAudio || Settings.showBattery
+                                  || Settings.showNetwork || Settings.showBluetooth || Settings.showNotifications
+        case "brightness": return Brightness.available && Settings.showBrightness
+        case "buttons":    return Settings.showButtons
+        case "recording":  return Recorder.active
+        case "clock":      return Settings.showClock
+        }
+        return false
+    }
+    readonly property var parts: ({
+        logo: cLogo, workspaces: cWorkspaces, spacer: cSpacer, media: cMedia, status: cStatus,
+        brightness: cBrightness, buttons: cButtons, recording: cRecording, clock: cClock
+    })
 
-            Item { Layout.fillHeight: true }
-
-            Media { Layout.alignment: Qt.AlignHCenter; Layout.fillWidth: true }
-
-            Pill {
-                Layout.fillWidth: true
-                visible: Settings.showStats || Settings.showAudio || Settings.showBattery || Settings.showNetwork || Settings.showBluetooth || Settings.showNotifications
-                SystemStats { Layout.alignment: Qt.AlignHCenter; visible: Settings.showStats }
-                Audio       { Layout.alignment: Qt.AlignHCenter }
-                Battery     { Layout.alignment: Qt.AlignHCenter }
-                NetworkWidget   { Layout.alignment: Qt.AlignHCenter; onClicked: win.networkRequested() }
-                BluetoothWidget { Layout.alignment: Qt.AlignHCenter; onClicked: win.bluetoothRequested() }
-                NotifWidget     { Layout.alignment: Qt.AlignHCenter; onClicked: win.notificationsRequested() }
-            }
-
-            Pill {
-                Layout.fillWidth: true
-                visible: Brightness.available && Settings.showBrightness
-                BrightnessSlider { Layout.alignment: Qt.AlignHCenter; compact: win.height < 820 }
-            }
-
-            Pill {
-                Layout.fillWidth: true
-                visible: Settings.showButtons
-                spacing: 2
-                SideButton { Layout.alignment: Qt.AlignHCenter; glyph: "⊞"; onClicked: win.launcherRequested() }
-                SideButton { Layout.alignment: Qt.AlignHCenter; glyph: "◐"; onClicked: Theme.next() }
-            }
-
-            RecIndicator { Layout.fillWidth: true }
-
-            Pill {
-                Layout.fillWidth: true
-                visible: Settings.showClock
-                Clock { Layout.alignment: Qt.AlignHCenter; onClicked: win.calendarRequested() }
-            }
+    Component { id: cSpacer; Item {} }
+    Component {
+        id: cLogo
+        Item {
+            implicitHeight: logo.implicitHeight
+            Logo { id: logo; anchors.horizontalCenter: parent.horizontalCenter }
+        }
+    }
+    Component {
+        id: cWorkspaces
+        Pill {
+            Workspaces { Layout.alignment: Qt.AlignHCenter; monitorName: win.modelData.name }
+        }
+    }
+    Component { id: cMedia; Media {} }
+    Component {
+        id: cStatus
+        Pill {
+            SystemStats { Layout.alignment: Qt.AlignHCenter; visible: Settings.showStats }
+            Audio       { Layout.alignment: Qt.AlignHCenter }
+            Battery     { Layout.alignment: Qt.AlignHCenter }
+            NetworkWidget   { Layout.alignment: Qt.AlignHCenter; onClicked: win.networkRequested() }
+            BluetoothWidget { Layout.alignment: Qt.AlignHCenter; onClicked: win.bluetoothRequested() }
+            NotifWidget     { Layout.alignment: Qt.AlignHCenter; onClicked: win.notificationsRequested() }
+        }
+    }
+    Component {
+        id: cBrightness
+        Pill {
+            BrightnessSlider { Layout.alignment: Qt.AlignHCenter; compact: win.height < 820 }
+        }
+    }
+    Component {
+        id: cButtons
+        Pill {
+            spacing: 2
+            SideButton { Layout.alignment: Qt.AlignHCenter; glyph: "⊞"; onClicked: win.launcherRequested() }
+            SideButton { Layout.alignment: Qt.AlignHCenter; glyph: "◐"; onClicked: Theme.next() }
+        }
+    }
+    Component { id: cRecording; RecIndicator {} }
+    Component {
+        id: cClock
+        Pill {
+            Clock { Layout.alignment: Qt.AlignHCenter; onClicked: win.calendarRequested() }
         }
     }
 }

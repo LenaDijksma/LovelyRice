@@ -35,6 +35,6 @@ Singleton {
     property int ticks: 0
     Timer {
         interval: 400; repeat: true; running: true; triggeredOnStart: true
-        onTriggered: { Hyprland.refreshMonitors(); root.load(); if (++root.ticks >= 8) stop() }
+        onTriggered: { Hyprland.refreshMonitors(); root.load(); if (++root.ticks >= 30) stop() }
     }
 }

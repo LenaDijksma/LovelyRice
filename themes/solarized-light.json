@@ -1,0 +1,8 @@
+{
+  "name": "solarized-light",
+  "colors": { "bg": "#fdf6e3", "surface": "#eee8d5", "fg": "#586e75", "dim": "#93a1a1",
+              "accent": "#268bd2", "accent2": "#d33682", "warn": "#b58900" },
+  "font": "JetBrains Mono",
+  "opacity": 0.97,
+  "shadow": 0.28
+}

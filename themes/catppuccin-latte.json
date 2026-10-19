@@ -1,0 +1,8 @@
+{
+  "name": "catppuccin-latte",
+  "colors": { "bg": "#eff1f5", "surface": "#ccd0da", "fg": "#4c4f69", "dim": "#9ca0b0",
+              "accent": "#8839ef", "accent2": "#ea76cb", "warn": "#df8e1d" },
+  "font": "JetBrains Mono",
+  "opacity": 0.97,
+  "shadow": 0.28
+}

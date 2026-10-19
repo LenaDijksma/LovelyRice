@@ -1,0 +1,8 @@
+{
+  "name": "mint",
+  "colors": { "bg": "#0e1a17", "surface": "#162622", "fg": "#d8efe8", "dim": "#5f8077",
+              "accent": "#3ddc97", "accent2": "#5ec8e5", "warn": "#f2c14e" },
+  "font": "JetBrains Mono",
+  "opacity": 0.94,
+  "shadow": 0.6
+}

@@ -12,6 +12,9 @@ Singleton {
     property int gap: 10
     property string side: "left"       // left | right
     property int radius: 20
+    // order of the sidebar modules, top to bottom; "spacer" is the flexible gap that pushes the rest to the bottom
+    property var sidebarOrder: ["logo", "workspaces", "spacer", "media", "status", "brightness", "buttons", "recording", "clock"]
+    readonly property var sidebarModules: ["logo", "workspaces", "spacer", "media", "status", "brightness", "buttons", "recording", "clock"]
     // ---- what is shown ----
     property bool showLogo: true
     property bool showWorkspaces: true
@@ -61,6 +64,7 @@ Singleton {
 
     readonly property var defaults: ({
         sidebarWidth: 54, gap: 10, side: "left", radius: 20,
+        sidebarOrder: ["logo", "workspaces", "spacer", "media", "status", "brightness", "buttons", "recording", "clock"],
         showLogo: true, showWorkspaces: true, showMedia: true, showStats: true,
         showAudio: true, showBattery: true, showButtons: true, showClock: true,
         showBrightness: true, showNotifications: true,
@@ -74,6 +78,26 @@ Singleton {
         sidebarWidth: [44, 84], gap: [0, 24], radius: [0, 32], lockMinutes: [1, 60], suspendMinutes: [5, 180],
         batteryLow: [5, 50]
     })
+
+    // keep only known modules, once each; modules missing from the list (added by an update) go back in at their default place
+    function cleanOrder(list) {
+        const known = sidebarModules, out = []
+        if (!Array.isArray(list)) list = []
+        for (const m of list) if (known.indexOf(m) >= 0 && out.indexOf(m) < 0) out.push(m)
+        for (let i = 0; i < known.length; i++) {
+            if (out.indexOf(known[i]) >= 0) continue
+            let at = out.length
+            for (let j = i + 1; j < known.length; j++) { const k = out.indexOf(known[j]); if (k >= 0) { at = k; break } }
+            out.splice(at, 0, known[i])
+        }
+        return out
+    }
+    function moveModule(id, dir) {            // dir -1 = up, +1 = down
+        const o = sidebarOrder.slice(), i = o.indexOf(id), j = i + dir
+        if (i < 0 || j < 0 || j >= o.length) return
+        o.splice(i, 1); o.splice(j, 0, id)
+        set("sidebarOrder", o)
+    }
 
     function clamp(key, v) {
         const l = limits[key]
@@ -93,6 +117,7 @@ Singleton {
                 root[k] = clamp(k, obj[k])
         }
         if (root.side !== "left" && root.side !== "right") root.side = "left"
+        root.sidebarOrder = cleanOrder(root.sidebarOrder)
     }
     function save() { saveTimer.restart() }
 

@@ -1,0 +1,8 @@
+{
+  "name": "material-ocean",
+  "colors": { "bg": "#0f111a", "surface": "#1a1c25", "fg": "#a6accd", "dim": "#4b526d",
+              "accent": "#82aaff", "accent2": "#c792ea", "warn": "#ffcb6b" },
+  "font": "JetBrains Mono",
+  "opacity": 0.94,
+  "shadow": 0.6
+}

@@ -1,0 +1,8 @@
+{
+  "name": "rose-pine-dawn",
+  "colors": { "bg": "#faf4ed", "surface": "#f2e9e1", "fg": "#575279", "dim": "#9893a5",
+              "accent": "#d7827e", "accent2": "#907aa9", "warn": "#ea9d34" },
+  "font": "JetBrains Mono",
+  "opacity": 0.97,
+  "shadow": 0.28
+}

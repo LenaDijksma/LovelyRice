@@ -5,6 +5,7 @@ import Quickshell.Wayland
 import Quickshell.Io
 import Quickshell.Hyprland
 import "Calc.js" as Calc
+import "Fuzzy.js" as Fuzzy
 import "Emoji.js" as EmojiData
 
 // Centered launcher + command palette. Tap SUPER to open.
@@ -150,7 +151,7 @@ PanelWindow {
             }
         }
         out.push({ kind: "music", id: "open", glyph: "♫", name: "Open ldmp", desc: "Terminal music player" })
-        return out.filter(x => raw === "" || x.name.toLowerCase().indexOf(raw) >= 0)
+        return out.filter(x => raw === "" || Fuzzy.score(raw, x.name) >= 0)
     }
     function musicAction(id) {
         if (id === "toggle") Music.toggle()
@@ -176,7 +177,7 @@ PanelWindow {
             let addr = String(t.address || "")
             if (addr === "") continue
             if (addr.indexOf("0x") !== 0) addr = "0x" + addr
-            if (raw !== "" && (title + " " + cls).toLowerCase().indexOf(raw) < 0) continue
+            if (raw !== "" && Fuzzy.score(raw, title + " " + cls) < 0) continue
             const ws = t.workspace ? String(t.workspace.name || "") : ""
             out.push({ kind: "win", id: addr, address: addr, catKind: AppCategory.kindFor(cls), name: title || cls || "(untitled)",
                        desc: cls + (ws ? "  ·  " + (ws.indexOf("special:") === 0 ? "special " + ws.slice(8) : "workspace " + ws) : "") })
@@ -190,7 +191,7 @@ PanelWindow {
     function procItems(raw) {
         const out = []
         for (const p of procs) {
-            if (raw !== "" && (p.comm + " " + p.pid).toLowerCase().indexOf(raw) < 0) continue
+            if (raw !== "" && Fuzzy.score(raw, p.comm + " " + p.pid) < 0) continue
             out.push({ kind: "proc", id: p.pid, confirm: true, glyph: "✕", name: p.comm,
                        desc: "pid " + p.pid + "  ·  cpu " + p.cpu + "%  ·  mem " + p.mem + "%" })
         }
@@ -205,7 +206,7 @@ PanelWindow {
         if (text !== "") out.push({ kind: "todoadd", id: "add", glyph: "+", name: "Add: " + text, desc: "Enter adds it to the list" })
         const open = Todos.items.filter(t => !t.done), done = Todos.items.filter(t => t.done)
         for (const t of open.concat(done)) {
-            if (raw !== "" && t.text.toLowerCase().indexOf(raw) < 0) continue
+            if (raw !== "" && Fuzzy.score(raw, t.text) < 0) continue
             out.push({ kind: "todo", id: t.id, glyph: t.done ? "✔" : "○", name: t.text, desc: t.done ? "done  ·  Enter to undo" : "Enter marks it done" })
         }
         if (done.length > 0 && raw === "") out.push({ kind: "todoclear", id: "clear", glyph: "⌫", name: "Clear completed", desc: "" })
@@ -272,7 +273,7 @@ PanelWindow {
         if (Net.wifiEnabled) {
             out.push({ kind: "netscan", id: "scan", glyph: "↻", name: Net.scanning ? "Scanning…" : "Rescan networks", desc: "" })
             for (const n of Net.networks) {
-                if (raw !== "" && n.ssid.toLowerCase().indexOf(raw) < 0) continue
+                if (raw !== "" && Fuzzy.score(raw, n.ssid) < 0) continue
                 out.push({ kind: "net", id: "n:" + n.ssid, iconKind: "wifi", iconLevel: n.signal / 100, net: n, name: n.ssid,
                            desc: (n.active ? "connected  ·  Enter disconnects" : (n.known ? "saved" : (n.security === "" ? "open" : n.security)))
                                  + "  ·  " + n.signal + "%" })
@@ -280,7 +281,7 @@ PanelWindow {
             if (Net.networks.length === 0 && !Net.scanning)
                 out.push({ kind: "info", id: "nonet", name: "No networks found", desc: "Try rescanning" })
         }
-        return raw === "" ? out : out.filter(x => x.kind === "net" || x.name.toLowerCase().indexOf(raw) >= 0)
+        return raw === "" ? out : out.filter(x => x.kind === "net" || Fuzzy.score(raw, x.name) >= 0)
     }
     function netPassItems() {
         return [{ kind: "netconnect", id: "go", glyph: "→", name: "Connect to " + pendingSsid, desc: "Type the password above, then press Enter" }]
@@ -295,12 +296,12 @@ PanelWindow {
         if (Bt.powered) {
             out.push({ kind: "btscan", id: "scan", glyph: "↻", name: Bt.scanning ? "Scanning…" : "Scan for devices", desc: "" })
             for (const d of Bt.devices) {
-                if (raw !== "" && d.name.toLowerCase().indexOf(raw) < 0) continue
+                if (raw !== "" && Fuzzy.score(raw, d.name) < 0) continue
                 out.push({ kind: "btdev", id: "d:" + d.mac, iconKind: "bluetooth", dev: d, name: d.name,
                            desc: d.connected ? "connected  ·  Enter disconnects" : (d.paired ? "paired  ·  Enter connects" : "new device  ·  Enter pairs") })
             }
         }
-        return raw === "" ? out : out.filter(x => x.kind === "btdev" || x.name.toLowerCase().indexOf(raw) >= 0)
+        return raw === "" ? out : out.filter(x => x.kind === "btdev" || Fuzzy.score(raw, x.name) >= 0)
     }
     // ---- /keys: read from the running compositor, so it always matches your real config ----
     property var binds: []
@@ -330,7 +331,7 @@ PanelWindow {
         const out = []
         for (let i = 0; i < binds.length; i++) {
             const combo = bindCombo(binds[i]), act = bindAction(binds[i])
-            if (raw !== "" && (combo + " " + act).toLowerCase().indexOf(raw) < 0) continue
+            if (raw !== "" && Fuzzy.score(raw, combo + " " + act) < 0) continue
             out.push({ kind: "info", id: "k" + i, glyph: "⌨", name: combo, desc: act })
         }
         out.sort((a, b) => a.name < b.name ? -1 : (a.name > b.name ? 1 : 0))
@@ -356,7 +357,7 @@ PanelWindow {
         }
         for (const i of Doctor.items) {
             const label = Doctor.name(i)
-            if (raw !== "" && (label + " " + i.pkg + " " + i.feature).toLowerCase().indexOf(raw) < 0) continue
+            if (raw !== "" && Fuzzy.score(raw, label + " " + i.pkg + " " + i.feature) < 0) continue
             out.push({ kind: i.ok ? "info" : "doctortool", id: "dt:" + i.cmd, tool: i, glyph: i.ok ? "✓" : "✗",
                        name: label + (i.required ? "  (required)" : ""),
                        desc: i.feature + (i.ok ? "" : (i.pkg !== "-" ? "  ·  Enter copies: sudo pacman -S --needed " + i.pkg : "  ·  install it yourself")) })
@@ -392,7 +393,7 @@ PanelWindow {
         for (const app of Notifs.mutedApps)
             out.push({ kind: "ctl", act: "unmute", id: "m:" + app, app: app, iconKind: "bell-off",
                        name: "Unmute " + app, desc: "popups from this app are muted  ·  Enter unmutes" })
-        return raw === "" ? out : out.filter(x => x.name.toLowerCase().indexOf(raw) >= 0 || x.desc.toLowerCase().indexOf(raw) >= 0)
+        return raw === "" ? out : out.filter(x => Fuzzy.match(raw, x.name, x.desc) >= 0)
     }
 
     function forgetSelected() {
@@ -411,31 +412,29 @@ PanelWindow {
             const name = a.name || ""
             const nl = name.toLowerCase()
             const extra = ((a.genericName || "") + " " + (a.comment || "")).toLowerCase()
-            let score = 0
-            if (q === "") score = 1
-            else if (nl.indexOf(q) === 0) score = 4
-            else if (nl.indexOf(" " + q) >= 0) score = 3
-            else if (nl.indexOf(q) >= 0) score = 2
-            else if (extra.indexOf(q) >= 0) score = 1
-            if (score === 0) continue
+            const score = Fuzzy.match(q, name, extra)
+            if (score < 0) continue
             out.push({ kind: "app", id: a.id, name: name, desc: a.genericName || a.comment || "",
                        icon: a.icon, entry: a, score: score, uses: Settings.rankApps ? (Usage.counts[a.id] || 0) : 0 })
         }
-        out.sort((x, y) => (y.score - x.score) || (y.uses - x.uses) || x.name.localeCompare(y.name))
+        // launch history nudges the order (up to +80) without overriding a clearly better match
+        const rank = x => x.score + Math.min(x.uses, 20) * 4
+        out.sort((x, y) => (rank(y) - rank(x)) || x.name.localeCompare(y.name))
         return out.slice(0, 60)
     }
 
     function compute() {
         const raw = query.trim().toLowerCase()
         if (mode === "scheme") {
-            return Theme.available.filter(n => n.indexOf(raw) >= 0)
-                .map(n => ({ kind: "scheme", id: n, name: n, desc: n === originalTheme ? "current" : "" }))
+            return Theme.available.map(n => ({ n: n, sc: Fuzzy.score(raw, n) })).filter(x => x.sc >= 0)
+                .sort((x, y) => raw === "" ? 0 : y.sc - x.sc)
+                .map(x => ({ kind: "scheme", id: x.n, name: x.n, desc: x.n === originalTheme ? "current" : "" }))
         }
         if (mode === "wallpaper") {
             const out = [{ kind: "wp", id: "", path: "", name: "Theme default", desc: "Generated from the theme colors" }]
             for (const p of wallpapers) {
                 const n = basename(p)
-                if (n.toLowerCase().indexOf(raw) >= 0) out.push({ kind: "wp", id: p, path: p, name: n, desc: "" })
+                if (Fuzzy.score(raw, n) >= 0) out.push({ kind: "wp", id: p, path: p, name: n, desc: "" })
             }
             if (wallpapers.length === 0)
                 out.push({ kind: "info", id: "none", name: "No wallpapers found", desc: "Put images in ~/Pictures/Wallpapers" })
@@ -446,7 +445,7 @@ PanelWindow {
                 return [{ kind: "info", id: "noclip", name: "cliphist is not installed", desc: "sudo pacman -S cliphist wl-clipboard" }]
             const out = []
             for (const c of clips) {
-                if (raw !== "" && c.label.toLowerCase().indexOf(raw) < 0) continue
+                if (raw !== "" && Fuzzy.score(raw, c.label) < 0) continue
                 out.push({ kind: "clip", id: c.id, raw: c.raw, binary: c.binary,
                            thumb: c.binary && c.thumb && thumbsReady ? clipThumbDir + "/" + c.id : "",
                            name: c.binary ? "Image" : (c.label.replace(/\s+/g, " ").trim() || "(blank)"),
@@ -483,11 +482,10 @@ PanelWindow {
             if (Recorder.active)
                 cmds = commands.filter(c => c.id !== "record" && c.id !== "record-region")
                     .concat([{ kind: "cmd", id: "record-stop", name: "record", icon: "■", desc: "Stop recording and save the video", special: "rec-stop" }])
-            const list = cmds.filter(c => q === "" || c.name.indexOf(q) >= 0
-                                               || (c.keywords || "").indexOf(q) >= 0
-                                               || c.desc.toLowerCase().indexOf(q) >= 0)
-            list.sort((a, b) => (b.name.indexOf(q) === 0) - (a.name.indexOf(q) === 0))
-            return list
+            const list = cmds.map(c => ({ c: c, sc: Fuzzy.match(q, c.name, (c.keywords || "") + " " + c.desc) }))
+                             .filter(x => x.sc >= 0)
+            if (q !== "") list.sort((x, y) => y.sc - x.sc)
+            return list.map(x => x.c)
         }
         const calc = calcRow(query)
         const apps = appItems(raw)

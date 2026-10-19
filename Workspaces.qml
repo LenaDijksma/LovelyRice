@@ -17,31 +17,37 @@ Column {
         sysmon: "⚙", magic: "✦", scratchpad: "✦"
     })
 
-    // Startup race: Hyprland's state may not be ready when the shell starts. Poll for a few seconds.
-    property int bootTicks: 0
-    Timer {
-        interval: 350; repeat: true; running: true; triggeredOnStart: true
-        onTriggered: {
-            Hyprland.refreshWorkspaces(); Hyprland.refreshToplevels(); Hyprland.refreshMonitors()
-            root.wsList = root.listWorkspaces()
-            root.specList = root.listSpecials()
-            if (++root.bootTicks >= 14) stop()
-        }
-    }
+    // The data comes from HyprSync (refreshes at startup and after every window / workspace event). The lists only
+    // change when their contents do, so the icons are not rebuilt (and their animations replayed) on every refresh.
     Connections {
         target: Hyprland.workspaces
         ignoreUnknownSignals: true
-        function onValuesChanged() { root.wsList = root.listWorkspaces(); root.specList = root.listSpecials() }
+        function onValuesChanged() { root.update() }
     }
+    Connections { target: HyprSync; function onRefreshed() { root.update() } }
+    Connections { target: Specials; function onByMonitorChanged() { root.update() } }
+    Component.onCompleted: { HyprSync.refreshNow(); update() }
 
     // ---- helpers ----
-    function firstClass(ws) {
+    // class of the first window; `_rev` only makes bindings re-evaluate after a refresh
+    function firstClass(ws, _rev) {
         const t = ws.toplevels.values
         for (let i = 0; i < t.length; i++) {
-            const c = t[i].lastIpcObject ? t[i].lastIpcObject.class : ""
+            const c = t[i].lastIpcObject && t[i].lastIpcObject.class ? t[i].lastIpcObject.class
+                    : (t[i].wayland && t[i].wayland.appId ? t[i].wayland.appId : "")
             if (c) return c
         }
         return ""
+    }
+    function same(a, b) {
+        if (a.length !== b.length) return false
+        for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false
+        return true
+    }
+    function update() {
+        const w = listWorkspaces(), s = listSpecials()
+        if (!same(w, wsList)) wsList = w
+        if (!same(s, specList)) specList = s
     }
     function kindFor(cls) { return AppCategory.kindFor(cls) }
     function listWorkspaces() {
@@ -65,8 +71,8 @@ Column {
             if (ms[i].name === monitorName && ms[i].activeWorkspace) return ms[i].activeWorkspace.id
         return Hyprland.focusedWorkspace ? Hyprland.focusedWorkspace.id : -1
     }
-    property var wsList: listWorkspaces()
-    property var specList: listSpecials()
+    property var wsList: []       // filled by update(), only reassigned when the contents change
+    property var specList: []
     readonly property int activeIndex: {
         const id = activeWorkspaceId()
         for (let i = 0; i < wsList.length; i++) if (wsList[i].id === id) return i
@@ -103,7 +109,7 @@ Column {
                     readonly property bool active: root.special === "" && root.activeIndex >= 0
                                                    && root.wsList[root.activeIndex].id === modelData.id
                     readonly property var wins: modelData.toplevels.values
-                    readonly property string cls: root.firstClass(modelData)
+                    readonly property string cls: root.firstClass(modelData, HyprSync.rev)
                     readonly property string kind: cls !== "" ? root.kindFor(cls) : ""
                     property real appear: 0
 
@@ -182,7 +188,7 @@ Column {
                 required property var modelData
                 readonly property string nm: modelData.name.replace(/^special:/, "")
                 readonly property bool active: root.special === modelData.name
-                readonly property string cls: root.firstClass(modelData)
+                readonly property string cls: root.firstClass(modelData, HyprSync.rev)
                 readonly property string kind: cls !== "" ? root.kindFor(cls) : ""
                 property real appear: 0
 

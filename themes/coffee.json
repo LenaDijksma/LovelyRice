@@ -1,0 +1,8 @@
+{
+  "name": "coffee",
+  "colors": { "bg": "#1c1512", "surface": "#2b211c", "fg": "#eadccf", "dim": "#8a7366",
+              "accent": "#d9a066", "accent2": "#c8745b", "warn": "#e8b84a" },
+  "font": "JetBrains Mono",
+  "opacity": 0.94,
+  "shadow": 0.6
+}

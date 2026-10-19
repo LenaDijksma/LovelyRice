@@ -1,0 +1,8 @@
+{
+  "name": "monokai",
+  "colors": { "bg": "#272822", "surface": "#3e3d32", "fg": "#f8f8f2", "dim": "#75715e",
+              "accent": "#a6e22e", "accent2": "#f92672", "warn": "#e6db74" },
+  "font": "JetBrains Mono",
+  "opacity": 0.94,
+  "shadow": 0.6
+}

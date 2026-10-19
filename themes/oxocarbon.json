@@ -1,0 +1,8 @@
+{
+  "name": "oxocarbon",
+  "colors": { "bg": "#161616", "surface": "#262626", "fg": "#f2f4f8", "dim": "#6f6f6f",
+              "accent": "#78a9ff", "accent2": "#ee5396", "warn": "#f1c21b" },
+  "font": "JetBrains Mono",
+  "opacity": 0.94,
+  "shadow": 0.6
+}

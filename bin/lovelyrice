@@ -29,7 +29,7 @@ case "${1:-}" in
     greet)
         [ -f "$gen/colors.osc" ] && cat "$gen/colors.osc"
         [ -n "${LR_NO_FETCH:-}" ] && exit 0
-        [ -f "$gen/fastfetch.jsonc" ] && command -v fastfetch >/dev/null 2>&1 && fastfetch --config "$gen/fastfetch.jsonc"
+        [ -f "$gen/fastfetch.jsonc" ] && command -v fastfetch >/dev/null 2>&1 && exec fastfetch --config "$gen/fastfetch.jsonc"   # exec: "shell" shows your shell, not sh
         exit 0 ;;
     fetch)
         command -v fastfetch >/dev/null 2>&1 || { echo "lovelyrice: fastfetch is not installed (sudo pacman -S fastfetch)" >&2; exit 1; }

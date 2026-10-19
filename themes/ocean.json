@@ -1,0 +1,8 @@
+{
+  "name": "ocean",
+  "colors": { "bg": "#0a1824", "surface": "#12283a", "fg": "#d6e6f2", "dim": "#5d7c93",
+              "accent": "#2fb5ff", "accent2": "#7ee8c8", "warn": "#ffb347" },
+  "font": "JetBrains Mono",
+  "opacity": 0.94,
+  "shadow": 0.6
+}

@@ -57,7 +57,11 @@ Singleton {
                         if (have[k]) { kind = catRules[i][0]; break outer }
             }
         }
-        if (kind === "") kind = "window"
+        if (kind === "") {
+            kind = "window"
+            // the desktop entries load a moment after startup; do not remember a miss from before they were there
+            if (DesktopEntries.applications.values.length === 0) return kind
+        }
         cache[cls] = kind
         return kind
     }

@@ -1,0 +1,8 @@
+{
+  "name": "github-light",
+  "colors": { "bg": "#ffffff", "surface": "#f6f8fa", "fg": "#24292f", "dim": "#6e7781",
+              "accent": "#0969da", "accent2": "#8250df", "warn": "#9a6700" },
+  "font": "JetBrains Mono",
+  "opacity": 0.97,
+  "shadow": 0.28
+}

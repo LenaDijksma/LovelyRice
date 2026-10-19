@@ -80,6 +80,19 @@ so you can tell whether Hyprland delivered it. `hyprctl globalshortcuts` should 
 - **Theme editor:** `/settings` → *Edit colors (scheme maker)…* (same as `/scheme-maker`, live preview).
 - **Animation speed:** `/settings` → off / fast / normal / slow. "off" also stops the pulsing battery, recording and lock animations.
 
+## Sidebar layout, tabs, fuzzy search (phase 8)
+- **Move the sidebar modules around:** `/settings` → *Sidebar* lists every module in order (logo, workspaces, flexible gap, media, status icons,
+  brightness, buttons, recording indicator, clock). `←`/`→` (or the ▲ ▼ buttons) move the selected one, `Enter` shows or hides it. The *flexible gap*
+  is the stretchy space that pushes everything after it to the bottom; move it to change where the sidebar splits. Saved in `settings.json` as `sidebarOrder`.
+- **Settings tabs:** Sidebar · Theme · Popouts · Power · Launcher. `Tab` / `Shift+Tab` (or `1`-`5`, or click) switch tabs.
+- **Fuzzy search:** the palette matches letters in order, not just substrings: `vsc` finds Visual Studio Code, `tg` Telegram, `thfm` Thunar File Manager.
+  Prefix and word-start matches rank first; launch history still breaks ties. Works in apps, `/` commands, `/scheme`, `/wallpaper`, `/windows`, `/kill`, `/clip`, `/todo`, `/network`, `/bluetooth`, `/keys`, `/doctor`.
+- **39 color schemes** (29 new): dracula, one-dark, solarized dark/light, monokai, ayu dark/light, catppuccin latte/frappe/macchiato, gruvbox-light,
+  rose-pine dawn/moon, tokyo-night storm/light, nord-light, everforest-light, github dark/light, material-ocean, oxocarbon, synthwave, sakura, mint, ocean,
+  midnight, coffee, lovelyrice, hacker. `/scheme` previews them live. Your own are still just JSON files in `~/.config/lovelyrice/themes/`.
+- **Workspace fixes:** `HyprSync.qml` refreshes Hyprland's state at startup (until Hyprland answers) and after every window / workspace / special-workspace
+  event, so workspace icons, app icons and special-workspace icons show up without `/reload`. The workspace list is only rebuilt when it actually changes.
+
 ## Themed apps and the cat (phase 7)
 LovelyRice now themes more than itself. After every theme or wallpaper change (and a few seconds after startup) a built-in sync
 (`scripts/theme-sync.sh`) writes everything below to `~/.local/state/lovelyrice/generated/` and recolors what is running.
@@ -101,9 +114,9 @@ and `lovelyrice setup --remove` takes it all out again.
 - **Greeting on launch:** `setup greet` adds a block to `.bashrc` / `.zshrc` / fish `conf.d` so every new foot window first applies the theme
   colors and then shows **fastfetch with the LovelyRice cat** (`lovelyrice greet`; `LR_NO_FETCH=1` keeps the colors but skips the fastfetch).
   Run it by hand with `lovelyrice fetch`. The config is `generated/fastfetch.jsonc`; the cat is `assets/cat.pix` (a pixel grid, `1` = face,
-  `2` = heart nose) turned into half-block characters in the accent colors, so it also works in any other truecolor terminal.
-- **The logo:** the sidebar shows the cat from `assets/logo.svg` instead of the "LR" text. `Logo.qml` draws the same paths, so face = accent and
-  heart nose = accent2 and it fades with the theme like everything else (hide it in `/settings` as before). `lovelyrice logo` prints the path of a
+  `2` = nori tab) turned into half-block characters in the accent colors, so it also works in any other truecolor terminal.
+- **The logo:** the sidebar shows the cat from `assets/logo.svg` instead of the "LR" text. `Logo.qml` draws the same paths, so body, ears and tail = accent and
+  the nori tab = accent2 (the eyes are cut out) and it fades with the theme like everything else (hide it in `/settings` as before). `lovelyrice logo` prints the path of a
   recolored `logo.svg` for notifications, icons or a README.
 - **For your own scripts and hooks:** hooks now also get `LR_C0`…`LR_C15` (the terminal colors) and `LR_LIGHT`, and `generated/colors.sh` can be
   sourced from anywhere (`. ~/.local/state/lovelyrice/generated/colors.sh`). The built-in sync runs first, then your hooks.

@@ -1,0 +1,8 @@
+{
+  "name": "nord-light",
+  "colors": { "bg": "#eceff4", "surface": "#e5e9f0", "fg": "#2e3440", "dim": "#7b88a1",
+              "accent": "#5e81ac", "accent2": "#b48ead", "warn": "#d08770" },
+  "font": "JetBrains Mono",
+  "opacity": 0.97,
+  "shadow": 0.28
+}

@@ -1,0 +1,8 @@
+{
+  "name": "synthwave",
+  "colors": { "bg": "#1a1033", "surface": "#2a1b4d", "fg": "#f4e9ff", "dim": "#7a6aa8",
+              "accent": "#ff2e97", "accent2": "#00e5ff", "warn": "#ffd319" },
+  "font": "JetBrains Mono",
+  "opacity": 0.94,
+  "shadow": 0.6
+}

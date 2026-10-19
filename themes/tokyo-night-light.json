@@ -1,0 +1,8 @@
+{
+  "name": "tokyo-night-light",
+  "colors": { "bg": "#d5d6db", "surface": "#cbccd1", "fg": "#343b58", "dim": "#9699a3",
+              "accent": "#34548a", "accent2": "#5a4a78", "warn": "#8f5e15" },
+  "font": "JetBrains Mono",
+  "opacity": 0.97,
+  "shadow": 0.28
+}

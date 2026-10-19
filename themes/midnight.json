@@ -1,0 +1,8 @@
+{
+  "name": "midnight",
+  "colors": { "bg": "#05060f", "surface": "#0f1124", "fg": "#dfe3ff", "dim": "#5b6085",
+              "accent": "#7c83ff", "accent2": "#ff7ccf", "warn": "#ffc857" },
+  "font": "JetBrains Mono",
+  "opacity": 0.94,
+  "shadow": 0.6
+}

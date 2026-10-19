@@ -1,0 +1,8 @@
+{
+  "name": "ayu-light",
+  "colors": { "bg": "#fafafa", "surface": "#eceff1", "fg": "#5c6166", "dim": "#abb0b6",
+              "accent": "#ff9940", "accent2": "#399ee6", "warn": "#f2ae49" },
+  "font": "JetBrains Mono",
+  "opacity": 0.97,
+  "shadow": 0.28
+}

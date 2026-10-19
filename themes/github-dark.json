@@ -1,0 +1,8 @@
+{
+  "name": "github-dark",
+  "colors": { "bg": "#0d1117", "surface": "#161b22", "fg": "#c9d1d9", "dim": "#8b949e",
+              "accent": "#58a6ff", "accent2": "#bc8cff", "warn": "#d29922" },
+  "font": "JetBrains Mono",
+  "opacity": 0.94,
+  "shadow": 0.6
+}

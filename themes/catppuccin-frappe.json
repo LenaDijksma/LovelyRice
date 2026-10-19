@@ -1,0 +1,8 @@
+{
+  "name": "catppuccin-frappe",
+  "colors": { "bg": "#303446", "surface": "#414559", "fg": "#c6d0f5", "dim": "#737994",
+              "accent": "#ca9ee6", "accent2": "#f4b8e4", "warn": "#e5c890" },
+  "font": "JetBrains Mono",
+  "opacity": 0.94,
+  "shadow": 0.6
+}

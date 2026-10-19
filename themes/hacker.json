@@ -1,0 +1,8 @@
+{
+  "name": "hacker",
+  "colors": { "bg": "#050805", "surface": "#0e170e", "fg": "#b8f5b8", "dim": "#4f7a4f",
+              "accent": "#39ff6a", "accent2": "#00d4aa", "warn": "#ffd24a" },
+  "font": "JetBrains Mono",
+  "opacity": 0.94,
+  "shadow": 0.6
+}

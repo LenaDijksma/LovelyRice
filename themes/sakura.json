@@ -1,0 +1,8 @@
+{
+  "name": "sakura",
+  "colors": { "bg": "#fff5f7", "surface": "#fde4ea", "fg": "#4a2f3a", "dim": "#b08b98",
+              "accent": "#e5527a", "accent2": "#8e6bbf", "warn": "#d98a1f" },
+  "font": "JetBrains Mono",
+  "opacity": 0.97,
+  "shadow": 0.28
+}

@@ -48,3 +48,7 @@ ldmp itself (separate zip, `ldmp_mpris.zip`) now exports cover art (`mpris:artUr
 fastfetch config, `colors.sh` for scripts. 16 terminal colors made from the theme (`LR_C0..15`). **`lovelyrice setup`** wires it into
 `foot.ini`, `gtk.css` and your shell (marked blocks, `--remove` undoes it). **Greeting:** `lovelyrice greet` / `fetch` — fastfetch with the cat.
 **Logo:** the cat (`assets/logo.svg`, `Logo.qml`) replaces the "LR" text and follows the theme. `/sync-apps`, `lovelyrice sync|setup|fetch|greet|colors|logo`.
+
+## Phase 8 — Layout, tabs, fuzzy, schemes, Hyprland sync  ✅ (this version)
+Sidebar modules reorderable and individually hideable (`sidebarOrder`). Settings split into tabs. Fuzzy matching (`Fuzzy.js`) across the palette.
+29 new schemes (39 total). `HyprSync.qml`: event-driven Hyprland refresh fixes the startup / special-workspace / app-icon "needs /reload" bugs.

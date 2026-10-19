@@ -58,10 +58,10 @@ do_foot() {
         echo "foot: removed the include from $ini"; return
     fi
     mkdir -p "$cfg/foot"
-    if [ -f "$gen/foot-colors.ini" ]; then cp "$gen/foot-colors.ini" "$inc"; else printf '[colors]\n' > "$inc"; fi
+    if [ -f "$gen/foot-colors.ini" ]; then cp "$gen/foot-colors.ini" "$inc"; else printf '[colors-dark]\n' > "$inc"; fi
     prepend "$ini" "$b" "$e" "include=$inc"
     echo "foot: $ini now includes $inc"
-    if grep -q '^\[colors-dark\]' "$ini" 2>/dev/null; then
+    if grep -Eq '^\[colors(-dark|-light)?\]' "$ini" 2>/dev/null; then
         echo "foot: note - your foot.ini has its own [colors] section, which wins for NEW windows. Delete it to let LovelyRice"
         echo "      pick the colors (running windows and the greeting still follow the theme either way)."
     fi

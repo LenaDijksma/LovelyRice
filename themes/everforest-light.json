@@ -1,0 +1,8 @@
+{
+  "name": "everforest-light",
+  "colors": { "bg": "#fdf6e3", "surface": "#f4f0d9", "fg": "#5c6a72", "dim": "#a6b0a0",
+              "accent": "#8da101", "accent2": "#35a77c", "warn": "#dfa000" },
+  "font": "JetBrains Mono",
+  "opacity": 0.97,
+  "shadow": 0.28
+}

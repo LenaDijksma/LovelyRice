@@ -1,0 +1,8 @@
+{
+  "name": "catppuccin-macchiato",
+  "colors": { "bg": "#24273a", "surface": "#363a4f", "fg": "#cad3f5", "dim": "#6e738d",
+              "accent": "#c6a0f6", "accent2": "#f5bde6", "warn": "#eed49f" },
+  "font": "JetBrains Mono",
+  "opacity": 0.94,
+  "shadow": 0.6
+}
