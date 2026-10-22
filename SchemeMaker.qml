@@ -375,7 +375,7 @@ PanelWindow {
                 color: Theme.dim
                 font { family: Theme.font; pixelSize: 12 }
                 text: !win.cur ? "" :
-                      win.cur.type === "slider" ? "←/→ or drag to change. Opacity is how see-through the sidebar and popups are."
+                      win.cur.type === "slider" ? "←/→ or drag to change. Opacity is how see-through the bar and popups are."
                     : win.cur.type === "toggle" ? "Switches Generate and Random between dark and light palettes."
                     : win.cur.id === "gen" ? "Keeps your Accent and builds the other colours around it."
                     : win.cur.id === "random" ? "A fresh palette from a random accent. Press Enter again for another."

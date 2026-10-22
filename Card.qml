@@ -10,6 +10,8 @@ Item {
     property real borderWidth: 1
     property real shadowX: 0
     property real shadowY: 10
+    property color shadowColor: "black"
+    property real shadowAmount: Theme.shadowOpacity
     default property alias content: body.data
 
     Rectangle {
@@ -25,8 +27,8 @@ Item {
         anchors.fill: shape
         source: shape
         shadowEnabled: true
-        shadowColor: "black"
-        shadowOpacity: Theme.shadowOpacity
+        shadowColor: root.shadowColor
+        shadowOpacity: root.shadowAmount
         shadowBlur: 1.0
         blurMax: 40
         shadowHorizontalOffset: root.shadowX

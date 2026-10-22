@@ -24,7 +24,9 @@ Singleton {
         if (p === "") { note("No wallpaper yet", "Pick one with /wallpaper first"); return }
         busy = true
         reader.command = ["sh", "-c",
-            'm=$(command -v magick || command -v convert) || exit 1; "$m" "$1[0]" -resize 40x40 -colorspace sRGB -depth 8 txt:-',
+            'f="$1"; case "$f" in *.mp4|*.webm|*.mkv|*.mov|*.m4v|*.MP4|*.WEBM|*.MKV|*.MOV|*.M4V) t=$(mktemp --suffix=.png) || exit 1; ' +
+            '{ ffmpeg -v error -y -ss 1 -i "$f" -frames:v 1 "$t" || ffmpeg -v error -y -i "$f" -frames:v 1 "$t"; } && f="$t" || exit 1;; esac; ' +
+            'm=$(command -v magick || command -v convert) || exit 1; "$m" "$f[0]" -resize 40x40 -colorspace sRGB -depth 8 txt:-; rm -f "$t"',
             "sh", p]
         reader.running = true
     }

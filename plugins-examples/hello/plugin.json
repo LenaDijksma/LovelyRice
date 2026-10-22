@@ -1,0 +1,7 @@
+{
+  "name": "hello",
+  "version": "0.1.0",
+  "description": "Example plugin: a bar module, a /hello command and a dropdown tab.",
+  "entry": "Main.qml",
+  "provides": ["barModule", "paletteCommand", "dropdownCard"]
+}

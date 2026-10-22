@@ -47,9 +47,10 @@ Singleton {
         stdout: StdioCollector { onStreamFinished: root.folderCover = text.trim() === "" ? "" : "file://" + root.encodePath(text.trim()) }
     }
 
-    // shared with MediaPopout / Media: where the sidebar widget is, and whether the pointer is on it
+    // shared with MediaPopout / Media: where the bar widget is, and whether the pointer is on it
     property bool hoverWidget: false
     property bool hoverCard: false
+    property real widgetX: -1
     property real widgetY: -1
     readonly property bool playing:    player ? player.isPlaying : false
     readonly property bool volumeSupported: player ? player.volumeSupported : false

@@ -12,6 +12,7 @@ have() {   # have "a|b" -> true when any alternative is installed
         IFS=$old_ifs
         case "$c" in
             font:*)  fc-list 2>/dev/null | grep -qi "${c#font:}" && return 0 ;;
+            qtmm)    [ -d /usr/lib/qt6/qml/QtMultimedia ] || [ -d /usr/lib64/qt6/qml/QtMultimedia ] && return 0 ;;
             ldmp)    command -v ldmp >/dev/null 2>&1 || [ -x "$HOME/.local/bin/ldmp" ] && return 0 ;;
             *)       command -v "$c" >/dev/null 2>&1 && return 0 ;;
         esac
@@ -31,19 +32,23 @@ opt	cliphist	cliphist	/clip clipboard history
 opt	grim	grim	Screenshots and the blurred lock screen
 opt	slurp	slurp	Region screenshots and recordings
 opt	wf-recorder	wf-recorder	/record
-opt	brightnessctl	brightnessctl	Sidebar brightness slider
+opt	brightnessctl	brightnessctl	Bar brightness slider
 opt	wpctl	wireplumber	/control: audio devices and mic
 opt	powerprofilesctl	power-profiles-daemon	/control: power profile
-opt	upower	upower	Battery in the sidebar
+opt	upower	upower	Battery in the bar
 opt	nmcli	networkmanager	/network
 opt	bluetoothctl	bluez-utils	/bluetooth
+opt	git	git	Plugins: lovelyrice plugin install / update
 opt	magick|convert	imagemagick	Colors from the wallpaper
+opt	qtmm	qt6-multimedia-ffmpeg	Video wallpapers (mp4, webm, mkv)
+opt	ffmpeg	ffmpeg	Video wallpaper thumbnails and colors from video wallpapers
 opt	curl	curl	Weather in the dashboard
 opt	xdg-open	xdg-utils	Opening web searches and links
 opt	fprintd-verify	fprintd	Fingerprint unlock on the lock screen
 opt	hyprlock	hyprlock	Fallback lock screen if the built-in one fails
 opt	foot	foot	Terminal that follows the theme (running windows recolor live)
 opt	fastfetch	fastfetch	Themed system info: `lovelyrice fetch` and the terminal greeting
+opt	qsb|qsb6|/usr/lib/qt6/bin/qsb	qt6-shadertools	Glass bar that bends what is behind it (`lovelyrice shaders`)
 opt	gsettings	glib2	GTK apps follow the theme (dark/light switch and live reload)
 opt	ldmp	-	/music integration (install ldmp yourself)
 TABLE

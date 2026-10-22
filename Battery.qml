@@ -5,6 +5,7 @@ import Quickshell.Services.UPower
 // Hover it to see the time remaining. Only appears on machines with a battery (and when enabled in /settings).
 Item {
     id: root
+    readonly property bool horizontal: Bar.horizontalFor(root)       // which way this bar runs (a split bar can have one of each)
     readonly property var dev: UPower.displayDevice
     readonly property bool present: dev !== null && dev.isLaptopBattery
     readonly property real pct: present ? dev.percentage : 0
@@ -14,16 +15,16 @@ Item {
     readonly property real bh: Math.round(bw * 0.54)
 
     visible: present && Settings.showBattery
-    implicitWidth: Theme.cell
-    implicitHeight: visible ? bh + Theme.fs(10) + 6 : 0
+    implicitWidth: root.horizontal ? (visible ? stack.implicitWidth + 4 : 0) : Theme.cell
+    implicitHeight: root.horizontal ? Theme.cell : (visible ? bh + Theme.fs(10) + 6 : 0)
 
-    Column {
+    BarStack {
+        id: stack
         anchors.centerIn: parent
-        spacing: 2
+        spacing: root.horizontal ? 5 : 2
 
         Item {
             width: root.bw + 4; height: root.bh
-            anchors.horizontalCenter: parent.horizontalCenter
 
             Rectangle {   // body
                 id: body
@@ -86,7 +87,6 @@ Item {
             }
         }
         Text {
-            anchors.horizontalCenter: parent.horizontalCenter
             text: area.containsMouse && Power.timeText !== "" ? Power.timeText : Math.round(root.pct * 100) + "%"
             color: Theme.dim
             font { family: Theme.font; pixelSize: Theme.fs(10) }

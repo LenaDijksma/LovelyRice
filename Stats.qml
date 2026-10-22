@@ -4,7 +4,7 @@ import Quickshell
 import Quickshell.Io
 
 // Resource history for the dashboard graphs (CPU, memory, network), sampled every 3 s from /proc, about 2 minutes kept.
-// Also holds the hover state shared by the sidebar clock and the Dashboard popout.
+// Also holds the hover state shared by the bar clock and the Dashboard popout.
 Singleton {
     id: root
     readonly property int keep: 40
@@ -18,6 +18,7 @@ Singleton {
 
     property bool hoverWidget: false
     property bool hoverCard: false
+    property real widgetX: -1          // centre of the bar clock, in screen coordinates
     property real widgetY: -1
 
     property real prevTotal: 0

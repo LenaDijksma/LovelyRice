@@ -5,7 +5,7 @@ import Quickshell.Hyprland
 import Quickshell.Wayland
 import Quickshell.Services.Pipewire
 
-// Flying popout for volume and brightness. Slides out from under the sidebar, then flies back.
+// Flying popout for volume and brightness. Slides out from under the utility bar (whichever edge it is on), then flies back.
 // Volume comes from PipeWire; brightness from Brightness.qml (/sys/class/backlight, laptop panels).
 PanelWindow {
     id: win
@@ -39,24 +39,27 @@ PanelWindow {
 
     // ---- brightness ----
     // Brightness.qml reads the backlight; it only reports changes made by something else (brightness keys),
-    // so dragging the sidebar slider doesn't also fly this popout out.
+    // so dragging the bar slider doesn't also fly this popout out.
     Connections {
         target: Brightness
         function onExternal(v) { win.popup("brightness", v, false) }
     }
 
-    // ---- window: right of the sidebar, vertically centered, on the focused monitor ----
+    // ---- window: next to the bar, centered along it, on the focused monitor ----
+    // Anchored to one edge only, so the compositor centers it along the bar.
     screen: {
         const m = Hyprland.focusedMonitor
         for (const s of Quickshell.screens) if (m && s.name === m.name) return s
         return Quickshell.screens[0]
     }
-    anchors { left: true }
-    margins.left: Settings.side === "left"
-        ? Theme.gap * 2 + Theme.barWidth
-        : Math.max(0, (win.screen ? win.screen.width : 1920) - (Theme.gap * 2 + Theme.barWidth) - implicitWidth)
-    implicitWidth: card.width + 24 + Theme.shadowPad
-    implicitHeight: card.height + Theme.shadowPad * 2
+    // which bar it comes out of: the one the status icons (volume) are on
+    readonly property string at: Bar.posOf("status")
+    readonly property bool alongX: Bar.isHorizontal(at)
+    anchors { left: !alongX; top: alongX }
+    margins.left: !alongX ? Bar.originX(win.screen ? win.screen.width : 1920, implicitWidth, 0, at) : 0
+    margins.top: alongX ? Bar.originY(win.screen ? win.screen.height : 1080, implicitHeight, 0, at) : 0
+    implicitWidth: Bar.winWidth(card.width, at)
+    implicitHeight: Bar.winHeight(card.height, at)
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
     visible: progress > 0.001
@@ -67,14 +70,13 @@ PanelWindow {
         id: card
         width: 66
         height: 230
-        anchors.verticalCenter: parent.verticalCenter
-        x: Settings.side === "left" ? -width + (width + 14) * win.progress   // flies out from the sidebar edge
-                                     : parent.width - (width + 14) * win.progress
+        x: Bar.flyX(width, parent.width, win.progress, win.at)     // flies out from the bar edge
+        y: Bar.flyY(height, parent.height, win.progress, win.at)
         opacity: Math.min(1, win.progress * 1.5)
         color: Qt.alpha(Theme.bg, 0.97)
         radius: Theme.radius
-        shadowX: Settings.side === "left" ? 4 : -4
-        shadowY: 6
+        shadowX: Bar.shadowXFor(win.at)
+        shadowY: Bar.shadowYFor(win.at)
 
         Icon {
             id: ic

@@ -17,7 +17,9 @@ PanelWindow {
         return Quickshell.screens[0]
     }
     anchors { top: true; right: true }
-    margins.right: Settings.side === "right" ? Theme.gap * 2 + Theme.barWidth : 0
+    // keep clear of the bar(s) when one is on the right or along the top
+    margins.right: Bar.insetOn("right")
+    margins.top: Bar.insetOn("top")
     implicitWidth: cardWidth + Theme.gap + Theme.shadowPad
     implicitHeight: col.height + Theme.gap + Theme.shadowPad
     exclusionMode: ExclusionMode.Ignore

@@ -4,11 +4,12 @@ import QtQuick
 // While do-not-disturb is on the bell is dimmed and slashed (the badge keeps counting what you miss).
 Item {
     id: root
+    readonly property bool horizontal: Bar.horizontalFor(root)       // which way this bar runs (a split bar can have one of each)
     signal clicked()
     readonly property int count: Math.min(Notifs.unread, Notifs.history.length)
     visible: Settings.showNotifications
-    implicitWidth: Theme.cell
-    implicitHeight: visible ? Theme.iconSize + 8 : 0
+    implicitWidth: root.horizontal ? (visible ? Theme.iconSize + 8 : 0) : Theme.cell
+    implicitHeight: root.horizontal ? Theme.cell : (visible ? Theme.iconSize + 8 : 0)
     scale: area.pressed ? 0.9 : (area.containsMouse ? 1.1 : 1.0)
     Behavior on scale { NumberAnimation { duration: Theme.dur(140); easing.type: Easing.OutBack } }
 

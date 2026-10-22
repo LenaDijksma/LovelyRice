@@ -3,7 +3,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
 
-// /settings — what the sidebar shows, its size and position, corner radius, popouts.
+// /settings — what the utility bar shows, how it looks (Style), whether it is split in two, popouts.
 // ↑/↓ select · ←/→ change · Enter/Space toggle · Esc close. Everything also works with the mouse.
 // Changes apply live and are saved automatically.
 PanelWindow {
@@ -24,7 +24,7 @@ PanelWindow {
 
     property int tab: 0
     readonly property var moduleLabels: ({
-        logo: "Logo", workspaces: "Workspaces", spacer: "Flexible gap (pushes the rest down)", media: "Media controls",
+        logo: "Logo", workspaces: "Workspaces", spacer: "Flexible gap (pushes the rest to the far end)", media: "Media controls",
         status: "Status icons (see below)", brightness: "Brightness slider", buttons: "Launcher and theme buttons",
         recording: "Recording indicator (only while recording)", clock: "Clock"
     })
@@ -32,15 +32,30 @@ PanelWindow {
         logo: "showLogo", workspaces: "showWorkspaces", media: "showMedia", brightness: "showBrightness",
         buttons: "showButtons", clock: "showClock"
     })
+    readonly property var dropLabels: ({
+        dashboard: "Dashboard (weather, graphs, calendar)", control: "Control (mic, dnd, audio, power)",
+        media: "Media (only while something plays)", notifications: "Notifications"
+    })
+    readonly property var dropToggle: ({
+        dashboard: "dropdownDashboard", control: "dropdownControl", media: "dropdownMedia", notifications: "dropdownNotifications"
+    })
+    // "plugin:<name>" in a module list is a plugin's module / tab; it is "off" while the plugin is not running
+    function pluginLabel(id) {
+        if (id.indexOf("plugin:") !== 0) return id
+        const n = id.slice(7)
+        return n + (Plugins.barComponent(n) || Plugins.cardComponent(n) ? "  (plugin)" : "  (plugin, off)")
+    }
+    property string confirming: ""       // the plugin whose Allow is waiting for a second Enter
     readonly property var tabs: [
-        { name: "Sidebar", rows: [
+        { name: "Bar", rows: [
             { type: "header", label: "Size and position" },
-            { type: "slider", key: "sidebarWidth", label: "Width",         min: 44, max: 84, step: 2, unit: " px" },
+            { type: "slider", key: "barThickness", label: "Thickness",     min: 44, max: 84, step: 2, unit: " px" },
             { type: "slider", key: "gap",          label: "Edge gap",      min: 0,  max: 24, step: 2, unit: " px" },
-            { type: "choice", key: "side",         label: "Position",      options: ["left", "right"] },
-            { type: "slider", key: "radius",       label: "Corner radius", min: 0,  max: 32, step: 2, unit: " px" },
-            { type: "header", label: "Modules, top to bottom  (← → or ▲ ▼ moves, Enter shows / hides)" }
-        ].concat(Settings.sidebarOrder.map(id => ({ type: "module", id: id, label: moduleLabels[id] || id, key: moduleToggle[id] || "" })))
+            { type: "choice", key: "barPosition",  label: "Position",      options: Settings.barPositions },
+            { type: "slider", key: "radius",       label: "Corner radius (popouts, panels)", min: 0,  max: 32, step: 2, unit: " px" },
+            { type: "header", label: "Modules, " + (Theme.horizontal ? "left to right  (← → or ◀ ▶ moves, Enter shows / hides)"
+                                                                      : "top to bottom  (← → or ▲ ▼ moves, Enter shows / hides)") }
+        ].concat(Settings.barOrder.map(id => ({ type: "module", list: "barOrder", id: id, label: moduleLabels[id] || pluginLabel(id), key: moduleToggle[id] || "" })))
          .concat([
             { type: "header", label: "Status icons" },
             { type: "toggle", key: "showStats",      label: "CPU / memory rings" },
@@ -50,10 +65,90 @@ PanelWindow {
             { type: "toggle", key: "showBluetooth",  label: "Bluetooth" },
             { type: "toggle", key: "showNotifications", label: "Notification bell (unread count)" }
         ]) },
+        { name: "Style", rows: [
+            { type: "header", label: "Looks  (Enter applies one; your position, modules and colors stay)" }
+        ].concat(Settings.presetNames.map(n => ({ type: "action", act: "preset:" + n, label: Settings.presetInfo[n] })))
+         .concat([
+            { type: "header", label: "Bar background" },
+            { type: "choice", key: "barStyle",         label: "Made of",          options: Settings.enums.barStyle },
+            { type: "slider", key: "barOpacity",       label: "Opacity",          min: 0,  max: 100, step: 5, unit: " %" },
+            { type: "slider", key: "barRadius",        label: "Corner radius",    min: 0,  max: 40,  step: 2, unit: " px" },
+            { type: "slider", key: "barBorder",        label: "Border width",     min: 0,  max: 4,   step: 1, unit: " px" },
+            { type: "choice", key: "barBorderColor",   label: "Border color",     options: Settings.enums.barBorderColor },
+            { type: "slider", key: "barBorderOpacity", label: "Border strength",  min: 0,  max: 100, step: 5, unit: " %" },
+            { type: "slider", key: "barShadow",        label: "Shadow",           min: 0,  max: 100, step: 5, unit: " %" },
+            { type: "choice", key: "barShadowColor",   label: "Shadow color  (accent = a glow)", options: Settings.enums.barShadowColor },
+            { type: "header", label: "Shape on its edge" },
+            { type: "slider", key: "barLength",        label: "Length",           min: 30, max: 100, step: 5, unit: " %" },
+            { type: "choice", key: "barAlign",         label: "Sits at the",      options: Settings.enums.barAlign },
+            { type: "slider", key: "barPadding",       label: "Padding inside the bar", min: 0, max: 14, step: 1, unit: " px" },
+            { type: "slider", key: "moduleSpacing",    label: "Space between modules",  min: 0, max: 20, step: 1, unit: " px" },
+            { type: "header", label: "Module pills" },
+            { type: "choice", key: "pillStyle",        label: "Made of",          options: Settings.enums.pillStyle },
+            { type: "slider", key: "pillRadius",       label: "Corner radius",    min: 0,  max: 28,  step: 1, unit: " px" },
+            { type: "slider", key: "pillOpacity",      label: "Opacity (filled)", min: 0,  max: 100, step: 5, unit: " %" },
+            { type: "slider", key: "pillPadding",      label: "Padding inside",   min: 0,  max: 12,  step: 1, unit: " px" },
+            { type: "header", label: "Glass  (bar or pills made of glass)" },
+            { type: "info",   label: Glass.shaderReady ? "Refraction shader: built, the rim bends what is behind it"
+                                                       : "Refraction shader not built: blur only. Run  lovelyrice shaders  (needs qt6-shadertools)" },
+            { type: "slider", key: "glassBlur",        label: "Blur",             min: 0,  max: 100, step: 5, unit: " %" },
+            { type: "slider", key: "glassRefraction",  label: "Refraction",       min: 0,  max: 100, step: 5, unit: " %" },
+            { type: "slider", key: "glassLight",       label: "Rim light",        min: 0,  max: 100, step: 5, unit: " %" },
+            { type: "slider", key: "glassTint",        label: "Theme tint",       min: 0,  max: 100, step: 5, unit: " %" },
+            { type: "toggle", key: "glassFringe",      label: "Color fringing at the rim" },
+            { type: "header", label: "Visibility" },
+            { type: "choice", key: "barVisibility",    label: "Bar is",           options: Settings.enums.barVisibility },
+            { type: "toggle", key: "barReserveSpace",  label: "Auto-hide: keep room for the bar" },
+            { type: "slider", key: "barHideDelay",     label: "Auto-hide delay",  min: 200, max: 2000, step: 100, unit: " ms" }
+        ]) },
+        { name: "Split", rows: [
+            { type: "header", label: "Two bars" },
+            { type: "toggle", key: "barSplit",         label: "Split the bar in two" },
+            { type: "choice", key: "bar2Position",     label: "Bar 2 sits on the", options: Settings.barPositions.filter(p => p !== Settings.barPosition) },
+            { type: "action", act: "splitLayout",      label: "Preset: workspaces along the top, the rest on the right" },
+            { type: "header", label: "Where each module lives  (bar 1 is on the " + Settings.barPosition + ", bar 2 on the " + Settings.bar2Position + ")" }
+        ].concat(Settings.barOrder.filter(id => id !== "spacer")
+                 .map(id => ({ type: "member", id: id, label: moduleLabels[id] || pluginLabel(id) })))
+         .concat([
+            { type: "info", label: "Order within a bar is set on the Bar tab. The flexible gap is on both bars." }
+        ]) },
+        { name: "Hyprland", rows: [
+            { type: "header", label: "Window borders and shape follow LovelyRice" },
+            { type: "toggle", key: "hyprSync",         label: "Hyprland follows the theme and the bar" },
+            { type: "info",   label: "Changes the running compositor only; turning it off reloads your own config. `lovelyrice hypr log` shows its answer." },
+            { type: "header", label: "Borders" },
+            { type: "toggle", key: "hyprBorders",      label: "Border colors from the theme" },
+            { type: "choice", key: "hyprBorderStyle",  label: "Active border",   options: Settings.enums.hyprBorderStyle },
+            { type: "header", label: "Shape" },
+            { type: "toggle", key: "hyprShape",        label: "Control border width, rounding and gaps" },
+            { type: "slider", key: "hyprBorderSize",   label: "Border width",    min: 0, max: 8,  step: 1, unit: " px" },
+            { type: "toggle", key: "hyprRoundFollow",  label: "Window rounding = the bar's corner radius" },
+            { type: "slider", key: "hyprRounding",     label: "Window rounding", min: 0, max: 30, step: 1, unit: " px" },
+            { type: "toggle", key: "hyprGapsFollow",   label: "Gaps follow the bar's edge gap" },
+            { type: "slider", key: "hyprGapsOut",      label: "Outer gap",       min: 0, max: 40, step: 1, unit: " px" },
+            { type: "slider", key: "hyprGapsIn",       label: "Inner gap",       min: 0, max: 20, step: 1, unit: " px" },
+            { type: "header", label: "Effects" },
+            { type: "toggle", key: "hyprBlur",         label: "Blur behind windows" },
+            { type: "slider", key: "hyprBlurSize",     label: "Blur size",       min: 1, max: 20, step: 1, unit: "" },
+            { type: "slider", key: "hyprBlurPasses",   label: "Blur passes",     min: 1, max: 6,  step: 1, unit: "" },
+            { type: "toggle", key: "hyprShadow",       label: "Window shadows" },
+            { type: "toggle", key: "hyprShadowGlow",   label: "Shadows glow in the accent color" },
+            { type: "slider", key: "hyprShadowRange",  label: "Shadow size",     min: 1, max: 40, step: 1, unit: " px" },
+            { type: "toggle", key: "hyprOpacity",      label: "Window opacity" },
+            { type: "slider", key: "hyprActiveOpacity",   label: "Focused window",   min: 50, max: 100, step: 1, unit: " %" },
+            { type: "slider", key: "hyprInactiveOpacity", label: "Other windows",    min: 50, max: 100, step: 1, unit: " %" }
+        ] },
+        { name: "Dropdown", rows: [
+            { type: "header", label: "Panel" },
+            { type: "choice", key: "dropdownPosition", label: "Position", options: Settings.dropdownPositions },
+            { type: "toggle", key: "dropdownHotEdge",  label: "Open when the pointer pushes against its edge" },
+            { type: "header", label: "Tabs, left to right  (← → moves, Enter shows / hides)" }
+        ].concat(Settings.dropdownOrder.map(id => ({ type: "module", list: "dropdownOrder", id: id, label: dropLabels[id] || pluginLabel(id), key: dropToggle[id] || "" }))) },
         { name: "Theme", rows: [
             { type: "header", label: "Colors" },
             { type: "toggle", key: "wallpaperTheme", label: "Colors follow the wallpaper" },
             { type: "action", act: "match",  label: "Match colors to current wallpaper" },
+            { type: "toggle", key: "wallpaperAnimate", label: "Play animated wallpapers (gif, webp, video)" },
             { type: "action", act: "editor", label: "Edit colors (scheme maker)…" },
             { type: "header", label: "Apps follow the theme" },
             { type: "toggle", key: "syncApps",       label: "Sync GTK, foot and fastfetch" },
@@ -71,6 +166,14 @@ PanelWindow {
             { type: "toggle", key: "weather",        label: "Weather in the dashboard (asks wttr.in)" },
             { type: "choice", key: "weatherUnits",   label: "Weather units", options: ["metric", "imperial"] }
         ] },
+        { name: "Plugins", rows: [
+            { type: "header", label: "Plugins are code that runs with your full permissions" },
+            { type: "toggle", key: "pluginHotReload", label: "Reload a plugin when its files change (for development)" },
+            { type: "action", act: "pluginsReload",   label: "Look for plugins again" },
+            { type: "header", label: "Installed  (Enter allows / turns on / turns off)" }
+        ].concat(Plugins.list.length === 0
+                 ? [{ type: "info", label: "none yet: lovelyrice plugin new <name>   or   lovelyrice plugin install <git-url>" }]
+                 : Plugins.list.map(p => ({ type: "plugin", plugin: p, label: p.name + (p.version ? "  " + p.version : "") }))) },
         { name: "Power", rows: [
             { type: "header", label: "Battery" },
             { type: "toggle", key: "batteryWarning", label: "Low-battery warning" },
@@ -103,10 +206,11 @@ PanelWindow {
     readonly property var rows: tabs[tab].rows
 
     function firstSelectable() { for (let i = 0; i < rows.length; i++) if (selectable(i)) return i; return 0 }
-    function setTab(t) { tab = (t + tabs.length) % tabs.length; index = firstSelectable() }
+    function setTab(t) { confirming = ""; tab = (t + tabs.length) % tabs.length; index = firstSelectable() }
 
     function selectable(i) { return rows[i] && rows[i].type !== "header" }
     function move(d) {
+        confirming = ""
         let i = index
         for (let n = 0; n < rows.length; n++) {
             i = (i + d + rows.length) % rows.length
@@ -119,8 +223,9 @@ PanelWindow {
         if (!r) return
         if (r.type === "module") {   // ← up, → down; the row follows the module
             const nb = rows[index + dir]
-            if (nb && nb.type === "module") { Settings.moveModule(r.id, dir); index += dir }
+            if (nb && nb.type === "module") { Settings.moveModule(r.id, dir, r.list); index += dir }
         }
+        else if (r.type === "member") Settings.toggleBar2(r.id)
         else if (r.type === "toggle") Settings.set(r.key, !Settings[r.key])
         else if (r.type === "slider") Settings.set(r.key, Settings[r.key] + dir * r.step)
         else if (r.type === "choice") {
@@ -136,12 +241,24 @@ PanelWindow {
             else if (r.act === "editor") schemeMakerRequested()
             else if (r.act === "doctor") doctorRequested()
             else if (r.act === "clearUsage") Usage.clear()
+            else if (r.act === "pluginsReload") Plugins.reload()
+            else if (r.act.indexOf("preset:") === 0) Settings.applyPreset(r.act.slice(7))
+            else if (r.act === "splitLayout") Settings.presetSplitLayout()
             else Settings.reset()
         }
-        else if (r.type === "toggle" || r.type === "choice") adjust(1)
+        else if (r.type === "plugin") {
+            const p = r.plugin
+            if (p.error !== "") return
+            if (!p.allowed || p.trust !== "ok") {
+                // trusting a plugin is a decision: the first Enter asks, the second one allows
+                if (confirming === p.name) { confirming = ""; Plugins.act("allow", p.name) }
+                else confirming = p.name
+            } else Plugins.act(p.enabled ? "disable" : "enable", p.name)
+        }
+        else if (r.type === "toggle" || r.type === "choice" || r.type === "member") adjust(1)
         else if (r.type === "module" && r.key) Settings.set(r.key, !Settings[r.key])
     }
-    function show() { Popups.claim("settings"); index = firstSelectable(); open = true; keys.forceActiveFocus() }
+    function show() { Popups.claim("settings"); confirming = ""; index = firstSelectable(); open = true; keys.forceActiveFocus() }
     function hide() { open = false; keys.focus = false }
     function toggle() { open ? hide() : show() }
 
@@ -161,7 +278,7 @@ PanelWindow {
 
     Card {
         id: card
-        width: 560
+        width: Math.min(parent.width - 40, 820)
         height: Math.min(parent.height - 80, 560)
         x: (parent.width - width) / 2
         y: (parent.height - height) / 2 + (1 - win.progress) * 20
@@ -208,9 +325,10 @@ PanelWindow {
             font { family: Theme.font; pixelSize: 11 }
         }
 
-        Row {   // tabs
+        Flow {   // tabs: wrap onto a second line instead of running off the card
             id: tabBar
             x: 18; y: 58
+            width: parent.width - 36
             spacing: 4
             Repeater {
                 model: win.tabs
@@ -219,7 +337,7 @@ PanelWindow {
                     required property var modelData
                     required property int index
                     readonly property bool cur: index === win.tab
-                    width: label.implicitWidth + 28; height: 30
+                    width: label.implicitWidth + 22; height: 30
                     Rectangle {
                         anchors.fill: parent
                         radius: Theme.radiusSmall
@@ -246,9 +364,9 @@ PanelWindow {
 
         ListView {
             id: list
-            x: 12; y: 96
+            x: 12; y: tabBar.y + tabBar.height + 8
             width: parent.width - 24
-            height: parent.height - 96 - 40
+            height: parent.height - y - 40
             clip: true
             model: win.rows
             boundsBehavior: Flickable.StopAtBounds
@@ -261,7 +379,8 @@ PanelWindow {
                 required property int index
                 readonly property bool sel: index === win.index
                 readonly property bool hdr: modelData.type === "header"
-                readonly property var val: modelData.key ? Settings[modelData.key] : undefined
+                readonly property var val: modelData.type === "member" ? Settings.bar2Modules.indexOf(modelData.id) >= 0
+                                           : (modelData.key ? Settings[modelData.key] : undefined)
                 width: ListView.view.width
                 height: hdr ? 36 : 44
 
@@ -303,13 +422,16 @@ PanelWindow {
                     font { family: Theme.font; pixelSize: 14 }
                 }
 
-                // ---- sidebar module: ▲ ▼ and (when it can be hidden) a switch ----
+                // ---- bar module: ▲ ▼ (◀ ▶ on a top/bottom bar) and (when it can be hidden) a switch ----
                 Row {
                     visible: row.modelData.type === "module"
                     anchors { right: parent.right; rightMargin: row.modelData.key ? 80 : 24; verticalCenter: parent.verticalCenter }
                     spacing: 6
                     Repeater {
-                        model: [{ g: "▲", d: -1 }, { g: "▼", d: 1 }]
+                        model: {
+                            const h = row.modelData.list === "dropdownOrder" ? true : Theme.horizontal
+                            return [{ g: h ? "◀" : "▲", d: -1 }, { g: h ? "▶" : "▼", d: 1 }]
+                        }
                         delegate: Rectangle {
                             id: ab
                             required property var modelData
@@ -330,7 +452,7 @@ PanelWindow {
 
                 // ---- toggle ----
                 Rectangle {
-                    visible: row.modelData.type === "toggle" || (row.modelData.type === "module" && row.modelData.key !== "")
+                    visible: row.modelData.type === "toggle" || row.modelData.type === "member" || (row.modelData.type === "module" && row.modelData.key !== "")
                     anchors { right: parent.right; rightMargin: 24; verticalCenter: parent.verticalCenter }
                     width: 44; height: 24; radius: 12
                     color: row.val ? Theme.accent : Qt.alpha(Theme.dim, 0.4)
@@ -342,6 +464,28 @@ PanelWindow {
                         color: row.val ? Theme.bg : Theme.fg
                         Behavior on x { NumberAnimation { duration: Theme.dur(180); easing.type: Easing.OutBack } }
                     }
+                }
+
+                Text {   // which bar a module is on
+                    visible: row.modelData.type === "member"
+                    anchors { right: parent.right; rightMargin: 80; verticalCenter: parent.verticalCenter }
+                    text: row.val ? "bar 2" : "bar 1"
+                    color: row.val ? Theme.accent : Theme.dim
+                    font { family: Theme.font; pixelSize: 12 }
+                }
+
+                // ---- plugin: its state, and what Enter will do ----
+                Text {
+                    visible: row.modelData.type === "plugin"
+                    anchors { right: parent.right; rightMargin: 24; verticalCenter: parent.verticalCenter }
+                    width: Math.min(implicitWidth, parent.width - 250)
+                    elide: Text.ElideRight
+                    readonly property var pl: row.modelData.plugin
+                    readonly property bool asking: pl !== undefined && win.confirming === pl.name
+                    text: !pl ? "" : (asking ? "⏎ again: allow it, full access" : Plugins.stateText(pl))
+                    color: !pl ? Theme.dim : (asking || pl.trust === "changed" || pl.error !== "" || Plugins.errors[pl.name] ? Theme.warn
+                                              : (Plugins.stateText(pl) === "on" ? Theme.accent : Theme.dim))
+                    font { family: Theme.font; pixelSize: 13 }
                 }
 
                 // ---- choice ----
@@ -405,7 +549,7 @@ PanelWindow {
         Text {
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: 14 }
             horizontalAlignment: Text.AlignHCenter
-            text: "↑↓ select   ←→ change   ⏎ toggle   tab / 1-5 switch tab   esc close"
+            text: "↑↓ select   ←→ change   ⏎ toggle   tab / 1-" + win.tabs.length + " switch tab   esc close"
             color: Theme.dim
             font { family: Theme.font; pixelSize: 10 }
         }

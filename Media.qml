@@ -1,16 +1,20 @@
 import QtQuick
 import Quickshell.Services.Mpris
 
-// No player running → this widget has zero height and the sidebar is unaffected.
+// No player running → this widget has zero size and the bar is unaffected.
 // Click = play/pause, scroll = next/previous, hover = media popout (cover art, seek bar).
+// Left/right bar: play glyph above a short title. Top/bottom bar: glyph and title on one line.
 Item {
     id: root
     readonly property var player: Music.player   // whatever is playing, otherwise ldmp
+    readonly property bool horizontal: Bar.horizontalFor(root)
     visible: player !== null && Settings.showMedia
-    implicitHeight: player !== null ? col.implicitHeight : 0
+    implicitWidth: horizontal ? (player !== null ? row.implicitWidth : 0) : 0
+    implicitHeight: horizontal ? Theme.cell : (player !== null ? col.implicitHeight : 0)
 
     Column {
         id: col
+        visible: !root.horizontal
         anchors.horizontalCenter: parent.horizontalCenter
         width: parent.width
         spacing: 2
@@ -29,8 +33,34 @@ Item {
             font { family: Theme.font; pixelSize: Theme.fs(9) }
         }
     }
+
+    Row {
+        id: row
+        visible: root.horizontal
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: 6
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: root.player && root.player.isPlaying ? "❚❚" : "▶"
+            color: Theme.accent
+            font { family: Theme.font; pixelSize: Theme.fs(14) }
+        }
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.min(implicitWidth, 170)
+            elide: Text.ElideRight
+            text: root.player ? (root.player.trackTitle || "—") : ""
+            color: Theme.dim
+            font { family: Theme.font; pixelSize: Theme.fs(11) }
+        }
+    }
+
     // lets the popout line up with this widget
-    function reportPos() { Music.widgetY = root.mapToItem(null, 0, root.height / 2).y }
+    function reportPos() {
+        const p = root.mapToItem(null, root.width / 2, root.height / 2)
+        Music.widgetX = p.x
+        Music.widgetY = p.y
+    }
 
     MouseArea {
         anchors.fill: parent

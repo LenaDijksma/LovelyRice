@@ -32,6 +32,7 @@ PanelWindow {
     property string armed: ""
     property string originalTheme: ""
     property var wallpapers: []
+    property var wpThumbs: ({})           // video path -> still frame (made with ffmpeg)
     property var procs: []                // /kill: running processes of this user
     property var clips: []                // clipboard history (cliphist), newest first
     property bool clipOK: false           // cliphist + wl-clipboard are installed
@@ -45,7 +46,7 @@ PanelWindow {
     signal overviewRequested()
     signal dashboardRequested()
     property string pendingSsid: ""
-    onOpenChanged: Popups.report("palette", open)
+    onOpenChanged: { Popups.report("palette", open); if (!open) endWpPreview() }
     Connections {
         target: Popups
         function onCloseOthers(except) { if (except !== "palette" && win.open) win.dismiss() }
@@ -68,8 +69,8 @@ PanelWindow {
         { kind: "cmd", id: "record-region", name: "record-region", icon: "◍", desc: "Record a selected region", special: "rec-region", keywords: "screencast video capture" },
         { kind: "cmd", id: "calendar",  name: "calendar",  icon: "▦", desc: "Month view and agenda (Google Calendar via iCal)",
           special: "calendar", keywords: "agenda events google date schedule" },
-        { kind: "cmd", id: "settings",  name: "settings",  icon: "⚙", desc: "Sidebar contents, size and more",
-          special: "settings", keywords: "preferences config options sidebar" },
+        { kind: "cmd", id: "settings",  name: "settings",  icon: "⚙", desc: "Bar contents, position, size and more",
+          special: "settings", keywords: "preferences config options bar sidebar position top bottom left right" },
         { kind: "cmd", id: "overview",  name: "overview",  icon: "▦", desc: "All workspaces with live window previews", special: "overview", keywords: "workspaces windows expose mission tab" },
         { kind: "cmd", id: "dashboard", name: "dashboard", icon: "◫", desc: "Weather, resource graphs and a mini calendar", special: "dashboard", keywords: "weather cpu memory network graphs calendar" },
         { kind: "cmd", id: "keys",      name: "keys",      icon: "⌨", desc: "Cheat sheet of your Hyprland keybinds", sub: true, keywords: "keybinds shortcuts bindings hotkeys help" },
@@ -434,7 +435,10 @@ PanelWindow {
             const out = [{ kind: "wp", id: "", path: "", name: "Theme default", desc: "Generated from the theme colors" }]
             for (const p of wallpapers) {
                 const n = basename(p)
-                if (Fuzzy.score(raw, n) >= 0) out.push({ kind: "wp", id: p, path: p, name: n, desc: "" })
+                const k = Theme.wallpaperKind(p)
+                if (Fuzzy.score(raw, n) >= 0)
+                    out.push({ kind: "wp", id: p, path: p, name: n, wk: k, thumb: wpThumbs[p] || "",
+                               desc: p === Theme.wallpaper ? "current" : (k === "video" ? "video" : (k === "anim" ? "animated" : "")) })
             }
             if (wallpapers.length === 0)
                 out.push({ kind: "info", id: "none", name: "No wallpapers found", desc: "Put images in ~/Pictures/Wallpapers" })
@@ -476,11 +480,21 @@ PanelWindow {
                               desc: "?arch wiki hyprland   ·   ?aw hyprland (Arch wiki)   ·   ?w, ?gh, ?yt, ?aur, ?g" }]
             return [{ kind: "web", id: "web", glyph: "↗", name: "Search " + r.label + " for “" + r.text + "”", desc: "Opens in your browser", url: r.url }]
         }
+        // "/name some text" for a plugin command that takes arguments: one row that runs it with that text
+        const pa = query.replace(/^\s+/, "").match(/^\/([a-z0-9-]+)\s+(.*)$/i)
+        if (pa) {
+            const pn = pa[1].toLowerCase()
+            const pc = commands.some(c => c.name === pn) ? null : Plugins.paletteCommands().find(c => c.name === pn && c.takesArgs)
+            if (pc) {
+                const args = pa[2].trim()
+                return [Object.assign({}, pc, { args: args, desc: args === "" ? pc.desc : "Enter runs it with “" + args + "”" })]
+            }
+        }
         if (raw.startsWith("/")) {
             const q = raw.slice(1)
-            let cmds = commands
+            let cmds = commands.concat(Plugins.paletteCommands().filter(pc => !commands.some(c => c.name === pc.name)))   // built-in names win
             if (Recorder.active)
-                cmds = commands.filter(c => c.id !== "record" && c.id !== "record-region")
+                cmds = cmds.filter(c => c.id !== "record" && c.id !== "record-region")
                     .concat([{ kind: "cmd", id: "record-stop", name: "record", icon: "■", desc: "Stop recording and save the video", special: "rec-stop" }])
             const list = cmds.map(c => ({ c: c, sc: Fuzzy.match(q, c.name, (c.keywords || "") + " " + c.desc) }))
                              .filter(x => x.sc >= 0)
@@ -495,8 +509,21 @@ PanelWindow {
 
     function preview() {
         if (mode === "scheme" && items[index]) Theme.select(items[index].id)
+        else if (mode === "wallpaper") wpPreviewTimer.restart()
     }
     onIndexChanged: preview()
+    onItemsChanged: if (mode === "wallpaper") wpPreviewTimer.restart()   // filtering moves a different row under the cursor
+
+    // /wallpaper: the desktop shows the highlighted row. Nothing is saved until Enter; every other way out puts the old one back.
+    Timer {
+        id: wpPreviewTimer
+        interval: 110          // skip rows you only pass on the way (a video would start decoding for nothing)
+        onTriggered: {
+            const it = win.items[win.index]
+            if (win.open && win.mode === "wallpaper" && it && it.kind === "wp") Theme.previewWp(it.path)
+        }
+    }
+    function endWpPreview() { wpPreviewTimer.stop(); Theme.clearWpPreview() }
 
     function openWith(startMode) {
         Popups.claim("palette")
@@ -506,7 +533,7 @@ PanelWindow {
         input.forceActiveFocus()
         if (startMode) enter(startMode)
     }
-    function closePalette() { open = false; input.focus = false }
+    function closePalette() { endWpPreview(); open = false; input.focus = false }
     function toggle() { open ? dismiss() : openWith("") }
 
     function enter(m) {
@@ -529,10 +556,12 @@ PanelWindow {
     function cancelSub() {
         if (mode === "netpass") { enter("network"); return }
         if (mode === "scheme") Theme.select(originalTheme)
+        endWpPreview()
         back()
     }
     function dismiss() {
         if (mode === "scheme") Theme.select(originalTheme)
+        endWpPreview()
         closePalette()
     }
     function goBack() { mode === "root" ? closePalette() : cancelSub() }
@@ -550,6 +579,11 @@ PanelWindow {
         if (it.kind === "cmd") {
             if (it.sub) { enter(it.id); return }
             if (it.confirm && armed !== it.id) { armed = it.id; return }
+            if (it.special === "plugin") {
+                // a command that takes text waits for it: Enter on the bare command fills in "/name "
+                if (it.takesArgs && it.args === undefined) { input.text = "/" + it.name + " "; return }
+                closePalette(); Plugins.runCommand(it, it.args); return
+            }
             if (it.special === "reload") Quickshell.reload(true)
             else if (it.special === "calendar") { closePalette(); calendarRequested(); return }
             else if (it.special === "settings") { closePalette(); settingsRequested(); return }
@@ -628,7 +662,7 @@ PanelWindow {
         } else if (it.kind === "scheme") {
             Theme.select(it.id); Theme.save(); closePalette()
         } else if (it.kind === "wp") {
-            Theme.setWallpaper(it.path); closePalette()
+            Theme.setWallpaper(it.path); closePalette()   // closePalette ends the preview; the shown path stays the same
         } else if (it.kind === "clip") {
             copyClip(it); closePalette()
         }
@@ -652,10 +686,37 @@ PanelWindow {
     Process {
         id: wpLister
         command: ["sh", "-c",
-            'for d in "$@"; do [ -d "$d" ] && find "$d" -maxdepth 2 -type f \\( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.webp" \\); done | sort',
+            'for d in "$@"; do [ -d "$d" ] && find "$d" -maxdepth 2 -type f \\( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.webp" -o -iname "*.gif" -o -iname "*.mp4" -o -iname "*.webm" -o -iname "*.mkv" -o -iname "*.mov" -o -iname "*.m4v" \\); done | sort',
             "sh"].concat(Theme.wallpaperDirs)
         stdout: StdioCollector {
-            onStreamFinished: win.wallpapers = text.split("\n").filter(s => s.length > 0)
+            onStreamFinished: {
+                win.wallpapers = text.split("\n").filter(s => s.length > 0)
+                // start on the wallpaper in use (previewing it changes nothing on screen)
+                if (win.mode === "wallpaper") win.index = Math.max(0, win.items.findIndex(i => i.kind === "wp" && i.path === Theme.wallpaper))
+                const vids = win.wallpapers.filter(p => Theme.wallpaperKind(p) === "video")
+                if (vids.length > 0) {
+                    wpThumbGen.command = ["sh", "-c",
+                        'command -v ffmpeg >/dev/null || exit 0; d="$1"; shift; mkdir -p "$d"; for f in "$@"; do ' +
+                        'k=$(printf %s "$f" | md5sum | cut -c1-16); t="$d/$k.jpg"; ' +
+                        '[ -s "$t" ] || ffmpeg -v error -y -ss 1 -i "$f" -frames:v 1 -vf scale=160:-1 "$t" 2>/dev/null || ffmpeg -v error -y -i "$f" -frames:v 1 -vf scale=160:-1 "$t" 2>/dev/null; ' +
+                        '[ -s "$t" ] && printf "%s\\t%s\\n" "$f" "$t"; done',
+                        "sh", Quickshell.env("XDG_RUNTIME_DIR") + "/lovelyrice-wp"].concat(vids)
+                    wpThumbGen.running = true
+                }
+            }
+        }
+    }
+    Process {   // still frames for video wallpapers, so the list can show something
+        id: wpThumbGen
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const m = Object.assign({}, win.wpThumbs)
+                for (const line of text.split("\n")) {
+                    const i = line.indexOf("\t")
+                    if (i > 0) m[line.slice(0, i)] = line.slice(i + 1)
+                }
+                win.wpThumbs = m
+            }
         }
     }
 
@@ -708,7 +769,8 @@ PanelWindow {
     // dim backdrop
     Rectangle {
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.4 * win.progress)
+        color: Qt.rgba(0, 0, 0, (win.mode === "wallpaper" ? 0.08 : 0.4) * win.progress)   // see the preview through it
+        Behavior on color { ColorAnimation { duration: Theme.dur(200) } }
         MouseArea { anchors.fill: parent; onClicked: win.dismiss() }
     }
 
@@ -933,7 +995,14 @@ PanelWindow {
                         visible: row.modelData.kind === "wp" && row.modelData.path !== ""
                         width: 64; height: 36
                         radius: Theme.radiusSmall - 2
-                        source: visible ? "file://" + row.modelData.path : ""
+                        source: visible ? "file://" + (row.modelData.thumb || (row.modelData.wk === "video" ? "" : row.modelData.path)) : ""
+                        Text {   // video without a thumbnail yet (or no ffmpeg)
+                            anchors.centerIn: parent
+                            visible: row.modelData.wk === "video" && !row.modelData.thumb
+                            text: "▶"
+                            color: Theme.dim
+                            font { family: Theme.font; pixelSize: 14 }
+                        }
                     }
                     RoundedImage {   // clipboard image thumbnail
                         visible: row.modelData.kind === "clip" && row.modelData.thumb !== ""
@@ -986,6 +1055,7 @@ PanelWindow {
             horizontalAlignment: Text.AlignHCenter
             text: win.mode === "root"
                   ? "type to search   / commands   = calc   ? web   : emoji   esc close"
+                  : win.mode === "wallpaper" ? "↑↓ preview   ⏎ set as wallpaper   esc cancel"
                   : win.mode === "clip" ? "↑↓ navigate   ⏎ copy   ctrl+d delete   esc back"
                   : win.mode === "todo" ? "⏎ add / toggle   ctrl+d delete   esc back"
                   : win.mode === "kill" ? "⏎ twice ends the process   esc back"

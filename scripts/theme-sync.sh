@@ -7,7 +7,8 @@
 #     colors.osc         the same colors as terminal escape codes (shell startup, `lovelyrice colors`)
 #     gtk.css            GTK 3 + 4 named colors        (copied to ~/.config/gtk-{3,4}.0/lovelyrice.css, which
 #                        your gtk.css imports: `lovelyrice setup gtk`)
-#     fastfetch.jsonc    fastfetch config + fastfetch-logo.ansi (the half-block cat in theme colors)
+#     fastfetch*.jsonc   fastfetch configs in three sizes (full, compact, narrow) + fastfetch-logo*.ansi
+#                        (the half-block cat in theme colors); `lovelyrice fetch` picks one to fit the terminal
 #     logo.svg           the cat logo in theme colors
 #     colors.sh          `. colors.sh` gives any script the LR_* colors
 # and recolors every running foot terminal in place. It never edits your own config files.
@@ -209,8 +210,12 @@ if [ -f "$assets/logo.svg" ]; then
 fi
 
 # ---------- fastfetch ----------
-cols=0; rows=0
-if [ -f "$assets/cat.pix" ]; then
+# Three layouts, so the greeting fits the window it opens in (bin/lovelyrice picks one from the terminal width):
+#   fastfetch.jsonc          big cat beside the full list           (assets/cat.pix)
+#   fastfetch-compact.jsonc  small cat beside a shorter list        (assets/cat-small.pix)
+#   fastfetch-narrow.jsonc   no cat, short list
+#   fastfetch-layout         the minimum widths (columns) for the first two, "full compact"
+pix2ansi() {   # half-block ANSI in the theme colors from a pixel grid: 1 = accent, 2 = accent2, 0 = empty
     awk -v c1="$(sgr "$accent")" -v c2="$(sgr "$accent2")" '
         { row[NR] = $0 }
         END {
@@ -231,27 +236,42 @@ if [ -f "$assets/cat.pix" ]; then
                 }
                 print line esc "[0m"
             }
-        }' "$assets/cat.pix" | put "$out/fastfetch-logo.ansi"
-    cols=$(head -n 1 "$assets/cat.pix" | tr -d '\n' | wc -c)
-    rows=$(( $(wc -l < "$assets/cat.pix") / 2 ))
+        }' "$1"
+}
+pix_cols() { head -n 1 "$1" | tr -d '\n' | wc -c; }
+pix_rows() { echo $(( $(wc -l < "$1") / 2 )); }
+
+big_cols=0; small_cols=0
+if [ -f "$assets/cat.pix" ]; then
+    pix2ansi "$assets/cat.pix" | put "$out/fastfetch-logo.ansi"
+    big_cols=$(pix_cols "$assets/cat.pix"); big_rows=$(pix_rows "$assets/cat.pix")
+fi
+if [ -f "$assets/cat-small.pix" ]; then
+    pix2ansi "$assets/cat-small.pix" | put "$out/fastfetch-logo-small.ansi"
+    small_cols=$(pix_cols "$assets/cat-small.pix"); small_rows=$(pix_rows "$assets/cat-small.pix")
 fi
 
 name=$(printf %s "${LR_THEME:-lovelyrice}" | tr -cd 'A-Za-z0-9._ -')
 ver=$(cat "$assets/../VERSION" 2>/dev/null | tr -cd '0-9A-Za-z.-')
-if [ "$cols" -gt 0 ]; then
-    logo=$(printf '  "logo": { "type": "file-raw", "source": "%s/fastfetch-logo.ansi", "width": %s, "height": %s, "padding": { "top": 1, "right": 3 } },' "$out" "$cols" "$rows")
+
+if [ "$big_cols" -gt 0 ]; then
+    logo_full=$(printf '  "logo": { "type": "file-raw", "source": "%s/fastfetch-logo.ansi", "width": %s, "height": %s, "padding": { "top": 1, "right": 3 } },' "$out" "$big_cols" "$big_rows")
 else
-    logo='  "logo": { "type": "small" },'
+    logo_full='  "logo": { "type": "small" },'
 fi
-cat <<EOF | put "$out/fastfetch.jsonc"
-{
-  "\$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
-$logo
-  "display": {
-    "separator": "  ",
-    "color": { "keys": "$(sgr "$accent")", "title": "$(sgr "$accent2")", "separator": "$(sgr "$dim")" }
-  },
-  "modules": [
+if [ "$small_cols" -gt 0 ]; then
+    logo_compact=$(printf '  "logo": { "type": "file-raw", "source": "%s/fastfetch-logo-small.ansi", "width": %s, "height": %s, "padding": { "top": 0, "right": 2 } },' "$out" "$small_cols" "$small_rows")
+else
+    logo_compact='  "logo": { "type": "small" },'
+fi
+logo_none='  "logo": { "type": "none" },'
+
+# minimum columns = logo + gap + the longest line of that list (about 56 for the full list, 38 for the short ones)
+need_full=$(( ${big_cols:-0} + 3 + 56 ))
+need_compact=$(( ${small_cols:-0} + 2 + 38 ))
+printf '%s %s\n' "$need_full" "$need_compact" | put "$out/fastfetch-layout"
+
+mods_full=$(cat <<EOF
     "title",
     { "type": "separator", "string": "─" },
     { "type": "os", "key": "os" },
@@ -268,8 +288,54 @@ $logo
     { "type": "custom", "key": "rice", "format": "lovelyrice ${ver:-?}  ·  $name" },
     "break",
     { "type": "colors", "symbol": "block" }
+EOF
+)
+# the short lists skip cpu, gpu and disk: their values are the long lines that wrap in a small window
+mods_compact=$(cat <<EOF
+    "title",
+    { "type": "separator", "string": "─" },
+    { "type": "os", "key": "os" },
+    { "type": "kernel", "key": "kernel" },
+    { "type": "uptime", "key": "uptime" },
+    { "type": "shell", "key": "shell" },
+    { "type": "wm", "key": "wm" },
+    { "type": "terminal", "key": "terminal" },
+    { "type": "memory", "key": "memory" },
+    { "type": "custom", "key": "rice", "format": "lovelyrice ${ver:-?}" },
+    "break",
+    { "type": "colors", "symbol": "block" }
+EOF
+)
+mods_narrow=$(cat <<EOF
+    "title",
+    { "type": "separator", "string": "─" },
+    { "type": "os", "key": "os" },
+    { "type": "wm", "key": "wm" },
+    { "type": "uptime", "key": "uptime" },
+    { "type": "memory", "key": "memory" },
+    { "type": "custom", "key": "rice", "format": "lovelyrice ${ver:-?}" },
+    "break",
+    { "type": "colors", "symbol": "block" }
+EOF
+)
+
+write_cfg() {   # write_cfg <file> <logo line> <modules>
+    cat <<EOF | put "$1"
+{
+  "\$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+$2
+  "display": {
+    "separator": "  ",
+    "color": { "keys": "$(sgr "$accent")", "title": "$(sgr "$accent2")", "separator": "$(sgr "$dim")" }
+  },
+  "modules": [
+$3
   ]
 }
 EOF
+}
+write_cfg "$out/fastfetch.jsonc"         "$logo_full"    "$mods_full"
+write_cfg "$out/fastfetch-compact.jsonc" "$logo_compact" "$mods_compact"
+write_cfg "$out/fastfetch-narrow.jsonc"  "$logo_none"    "$mods_narrow"
 
 exit 0

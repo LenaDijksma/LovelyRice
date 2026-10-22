@@ -14,6 +14,7 @@ chmod +x "$src/bin/lovelyrice" "$src/scripts/"*.sh "$src/hooks-examples/"*.sh 2>
 echo "Linked $dest"
 echo "Linked $bin/lovelyrice"
 case ":$PATH:" in *":$bin:"*) ;; *) echo "Note: $bin is not in your PATH." ;; esac
+sh "$src/scripts/build-shaders.sh" --quiet 2>/dev/null || true   # glass refraction shader, if qsb is installed
 echo
 sh "$src/scripts/doctor.sh" --text
 echo

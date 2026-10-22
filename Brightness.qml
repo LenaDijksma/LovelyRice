@@ -16,7 +16,7 @@ Singleton {
     readonly property string blName: blPath.split("/").pop()
     property real value: -1
     readonly property bool available: blPath !== "" && value >= 0
-    property bool dragging: false            // the sidebar slider is being dragged
+    property bool dragging: false            // the bar slider is being dragged
     property real pending: -1                // a level waiting for the previous brightnessctl call to finish
     property double holdUntil: 0             // while we are driving the level, ignore what the file says
     signal external(real v)

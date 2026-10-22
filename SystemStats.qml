@@ -2,7 +2,8 @@ import QtQuick
 import Quickshell.Io
 
 // CPU and memory from /proc, shown as animated rings. No external dependencies.
-Column {
+// Stacked down a left/right bar, side by side on a top/bottom bar.
+BarStack {
     id: root
     spacing: 4
     property int cpu: 0
@@ -38,8 +39,6 @@ Column {
         onTriggered: { stat.reload(); meminfo.reload() }
     }
 
-    Ring { anchors.horizontalCenter: parent.horizontalCenter
-           value: root.cpu / 100; label: "cpu"; color: root.cpu > 85 ? Theme.warn : Theme.accent }
-    Ring { anchors.horizontalCenter: parent.horizontalCenter
-           value: root.mem / 100; label: "mem"; color: root.mem > 90 ? Theme.warn : Theme.accent2 }
+    Ring { value: root.cpu / 100; label: "cpu"; color: root.cpu > 85 ? Theme.warn : Theme.accent }
+    Ring { value: root.mem / 100; label: "mem"; color: root.mem > 90 ? Theme.warn : Theme.accent2 }
 }

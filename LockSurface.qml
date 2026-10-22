@@ -34,7 +34,7 @@ Item {
     }
     Image {
         anchors.fill: parent
-        source: Theme.wallpaper !== "" ? "file://" + Theme.wallpaper : ""
+        source: Theme.wallpaper !== "" && Theme.wallpaperKind(Theme.wallpaper) !== "video" ? "file://" + Theme.wallpaper : ""
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         sourceSize: Qt.size(root.width, root.height)

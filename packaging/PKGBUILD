@@ -8,7 +8,7 @@
 pkgname=lovelyrice
 pkgver=0.8.0
 pkgrel=1
-pkgdesc="Keyboard-first Quickshell desktop shell for Hyprland: floating sidebar, launcher, command palette, lock screen"
+pkgdesc="Keyboard-first Quickshell desktop shell for Hyprland: floating utility bar, launcher, command palette, lock screen"
 arch=('any')
 url="https://github.com/"   # TODO: your repository
 license=('custom')          # TODO: pick a license and add a LICENSE file
@@ -20,10 +20,12 @@ optdepends=(
     'grim: screenshots and the blurred lock screen'
     'slurp: region screenshots and recordings'
     'wf-recorder: /record'
-    'brightnessctl: sidebar brightness slider'
+    'qt6-multimedia-ffmpeg: video wallpapers (mp4, webm, mkv)'
+    'ffmpeg: video wallpaper thumbnails and colors from video wallpapers'
+    'brightnessctl: bar brightness slider'
     'wireplumber: /control audio devices and mic'
     'power-profiles-daemon: /control power profile'
-    'upower: battery in the sidebar'
+    'upower: battery in the bar'
     'networkmanager: /network'
     'bluez-utils: /bluetooth'
     'imagemagick: colors from the wallpaper'
@@ -34,6 +36,8 @@ optdepends=(
     'foot: terminal that follows the theme'
     'fastfetch: themed system info and the terminal greeting'
     'glib2: gsettings, so GTK apps follow the theme'
+    'git: installing and updating plugins'
+    'qt6-shadertools: build the glass refraction shader (`lovelyrice shaders`, run in a user copy)'
 )
 # No source download: the package is built from the checkout this PKGBUILD lives in.
 source=()

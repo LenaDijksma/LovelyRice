@@ -52,3 +52,23 @@ fastfetch config, `colors.sh` for scripts. 16 terminal colors made from the them
 ## Phase 8 — Layout, tabs, fuzzy, schemes, Hyprland sync  ✅ (this version)
 Sidebar modules reorderable and individually hideable (`sidebarOrder`). Settings split into tabs. Fuzzy matching (`Fuzzy.js`) across the palette.
 29 new schemes (39 total). `HyprSync.qml`: event-driven Hyprland refresh fixes the startup / special-workspace / app-icon "needs /reload" bugs.
+
+## Phase 9 — Utility bar  (in progress)
+The sidebar is now the **utility bar**: `barPosition` left | right | top | bottom (default right), every module has a horizontal layout,
+popouts fly out of whichever edge the bar is on, notifications keep clear of it. Old `sidebar*` / `side` settings keys are still read.
+`lovelyrice bar [position]`. Still to come from the feature plan: running-apps module, system tray, auto-hide, per-monitor position.
+The **dropdown panel** is in, as an edge-attached tabbed panel: dashboard / control / media / notification tabs, `dropdownPosition`, `SUPER + D`, `lovelyrice dropdown`, optional hot edge.
+Tabs are a `parts` map in `Dropdown.qml`, ready for plugins to add their own (section 3 of the plan).
+
+## Phase 10 — Plugins  (in progress)
+`~/.config/lovelyrice/plugins/<name>/{plugin.json,Main.qml}`. Extension points: **bar module**, **palette command**, **dropdown card**; the plugin
+gets an `api` (theme colors, bar orientation, notifications, running commands, per-plugin storage). **Trust:** installing never loads; a plugin
+needs `lovelyrice plugin allow <name>` (or the *Allow* row in `/settings` → Plugins, two Enters); the git commit is pinned, so new code needs
+allowing again. `lovelyrice plugin list|info|install|new|allow|enable|disable|revoke|update|remove|status|reload`, hot reload for development
+(`Main.qml` only), `plugins-examples/hello`, [PLUGINS.md](PLUGINS.md). Not yet: settings pages, IPC functions and theme hooks as plugin
+extension points. Animated wallpaper (phase 11) is independent: gif / webp / video wallpapers and the `/wallpaper` live preview are in (untested on real hardware).
+
+## Phase 12 — Style  ✅ (v0.12, untested on hardware)
+Style tab (looks, bar background, border/shadow/glow, length and alignment, pill styles and rounding, visibility with auto-hide), glass with a refraction shader (`shaders/glass.frag`, `lovelyrice shaders`) and a blur fallback, and a split bar with per-module assignment. Per-bar orientation for modules (`Bar.horizontalFor`), popouts follow their module's bar.
+
+Hyprland integration (v0.12, untested on hardware): `HyprTheme.qml`, `scripts/hypr-apply.sh`, `/settings` → Hyprland, `lovelyrice hypr`.

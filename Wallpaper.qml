@@ -26,17 +26,16 @@ Variants {
             clearAnim.stop()
             const n = useA ? a : b
             useA = !useA
-            const url = "file://" + p
+            n.fadeMs = Theme.previewActive ? Theme.dur(220) : Theme.dur(800)   // previews switch quickly
             n.z = ++zc
-            n.pending = true
-            if (n.source.toString() === url && n.status === Image.Ready) { n.reveal(); return }
-            n.opacity = 0
-            n.source = url
+            n.load(p)
         }
-        Component.onCompleted: setPath(Theme.wallpaper)
+        // the layer that is fully covered stops (a video would keep decoding behind the new wallpaper)
+        function settle(top, under) { if (under.z < top.z) under.release() }
+        Component.onCompleted: setPath(Theme.shownWallpaper)
         Connections {
             target: Theme
-            function onWallpaperChanged() { win.setPath(Theme.wallpaper) }
+            function onShownWallpaperChanged() { win.setPath(Theme.shownWallpaper) }
         }
 
         Rectangle {
@@ -57,13 +56,24 @@ Variants {
             }
         }
 
-        WallpaperLayer { id: a; sourceSize: Qt.size(win.screen.width * win.screen.devicePixelRatio, win.screen.height * win.screen.devicePixelRatio) }
-        WallpaperLayer { id: b; sourceSize: Qt.size(win.screen.width * win.screen.devicePixelRatio, win.screen.height * win.screen.devicePixelRatio) }
+        WallpaperLayer {
+            id: a
+            animate: Settings.wallpaperAnimate
+            sourceSize: Qt.size(win.screen.width * win.screen.devicePixelRatio, win.screen.height * win.screen.devicePixelRatio)
+            onRevealed: win.settle(a, b)
+        }
+        WallpaperLayer {
+            id: b
+            animate: Settings.wallpaperAnimate
+            sourceSize: Qt.size(win.screen.width * win.screen.devicePixelRatio, win.screen.height * win.screen.devicePixelRatio)
+            onRevealed: win.settle(b, a)
+        }
 
         ParallelAnimation {
             id: clearAnim
             NumberAnimation { target: a; property: "opacity"; to: 0; duration: Theme.dur(500) }
             NumberAnimation { target: b; property: "opacity"; to: 0; duration: Theme.dur(500) }
+            onFinished: { a.release(); b.release() }
         }
     }
 }

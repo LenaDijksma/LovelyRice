@@ -8,13 +8,14 @@ import Quickshell.Hyprland
 // Each piece is independent: if one optional service is missing, the rest still load.
 ShellRoot {
     id: root
-    Component.onCompleted: { Specials.load(); Notifs.start(); Timers.start(); Net.refresh(); Bt.refresh(); Terminal.resolve(); Doctor.start(); Power.start(); WallpaperColors.start(); Lid.start(); Stats.start(); Hooks.start() }
+    Component.onCompleted: { Specials.load(); Notifs.start(); Timers.start(); Net.refresh(); Bt.refresh(); Terminal.resolve(); Doctor.start(); Power.start(); WallpaperColors.start(); Lid.start(); Stats.start(); Hooks.start(); Plugins.start(); HyprTheme.start() }
 
     // SUPER / launcher button: if any popup is open, close it; otherwise open the palette.
     function mainToggle() {
         if (Popups.anyOpen) Popups.closeAll()
         else palette.toggle()
     }
+    property string barBeforeHide: "always"      // what `lovelyrice bar toggle` goes back to
     function doLock() {
         Popups.closeAll()
         if (lockLoader.status === Loader.Ready) lockLoader.item.lock()
@@ -24,10 +25,10 @@ ShellRoot {
 
     Wallpaper {}
 
-    // One sidebar per monitor
+    // One utility bar per monitor
     Variants {
         model: Quickshell.screens
-        Sidebar {
+        UtilityBar {
             onLauncherRequested: root.mainToggle()
             onCalendarRequested: cal.toggle()
             onNetworkRequested: palette.openWith("network")
@@ -54,6 +55,8 @@ ShellRoot {
     MediaPopout { id: mediaPop }
     NotificationToasts {}
     NotificationPanel { id: notifPanel }
+    Dropdown { id: dropdown }
+    DropdownEdge { dropdown: dropdown }
     Loader { id: lockLoader; source: "Lock.qml" }
     Loader { source: "Idle.qml" }                    // auto-lock / auto-suspend (settings)
     Connections { target: Session; function onLockRequested() { lockTimer.restart() } }   // a failure here must not take the shell down
@@ -105,6 +108,10 @@ ShellRoot {
         appid: "lovelyrice"; name: "notifications"; description: "Toggle the notification history"
         onPressed: notifPanel.toggle()
     }
+    GlobalShortcut {
+        appid: "lovelyrice"; name: "dropdown"; description: "Toggle the dropdown panel"
+        onPressed: dropdown.toggle()
+    }
 
     // CLI: qs -c lovelyrice ipc call rice toggle
     IpcHandler {
@@ -115,6 +122,7 @@ ShellRoot {
         function settings(): void { settings.toggle() }
         function lock(): void { root.doLock() }
         function notifications(): void { notifPanel.toggle() }
+        function dropdown(): void { dropdown.toggle() }
         function dnd(): void { Notifs.dnd = !Notifs.dnd }
         function screenshot(mode: string): void { Quickshell.execDetached(["sh", Quickshell.shellPath("scripts/screenshot.sh"), mode === "screen" ? "screen" : "region"]) }
         function record(region: bool): void { Recorder.active ? Recorder.stop() : Recorder.start(region) }
@@ -134,5 +142,53 @@ ShellRoot {
         function schemeMaker(): void { maker.show() }
         function nextTheme(): void { Theme.next() }
         function setTheme(name: string): void { Theme.select(name); Theme.save() }
+        function pluginsReload(): void { Plugins.reload() }
+        function pluginStatus(): string { return Plugins.status() }
+        // Hyprland integration: on | off | toggle, apply now, and what Hyprland last answered
+        function hypr(mode: string): string {
+            Settings.set("hyprSync", mode === "on" ? true : (mode === "off" ? false : !Settings.hyprSync))
+            return Settings.hyprSync ? "on" : "off"
+        }
+        function hyprApply(): void { HyprTheme.applyNow() }
+        function bar(): string { return Settings.barPosition }
+        function setBar(position: string): string {
+            if (Settings.barPositions.indexOf(position) < 0)
+                return "unknown position '" + position + "' (use " + Settings.barPositions.join(", ") + ")"
+            Settings.set("barPosition", position)
+            return position
+        }
+        // visibility: always | autohide | hidden
+        function barMode(): string { return Settings.barVisibility }
+        function setBarMode(mode: string): string {
+            if (Settings.enums.barVisibility.indexOf(mode) < 0)
+                return "unknown mode '" + mode + "' (use " + Settings.enums.barVisibility.join(", ") + ")"
+            Settings.set("barVisibility", mode)
+            return mode
+        }
+        function toggleBar(): string {
+            if (Settings.barVisibility === "hidden") Settings.set("barVisibility", root.barBeforeHide)
+            else { root.barBeforeHide = Settings.barVisibility; Settings.set("barVisibility", "hidden") }
+            return Settings.barVisibility
+        }
+        // looks (the presets of /settings -> Style)
+        function looks(): string { return Settings.presetNames.join(" ") }
+        function setLook(name: string): string {
+            if (Settings.presetNames.indexOf(name) < 0)
+                return "unknown look '" + name + "' (use " + Settings.presetNames.join(", ") + ")"
+            Settings.applyPreset(name)
+            return name
+        }
+        // the split bar: on | off | toggle, and where bar 2 sits
+        function split(mode: string): string {
+            Settings.set("barSplit", mode === "on" ? true : (mode === "off" ? false : !Settings.barSplit))
+            return Settings.barSplit ? "on" : "off"
+        }
+        function bar2(): string { return Settings.barSplit ? Settings.bar2Position : "off" }
+        function setBar2(position: string): string {
+            if (Settings.barPositions.indexOf(position) < 0)
+                return "unknown position '" + position + "' (use " + Settings.barPositions.join(", ") + ")"
+            Settings.set("bar2Position", position)
+            return Settings.bar2Position
+        }
     }
 }

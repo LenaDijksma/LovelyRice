@@ -8,7 +8,7 @@ import Quickshell.Services.Notifications
 //  - popups:  notifications currently on screen (shown by NotificationToasts.qml)
 //  - history: everything that arrived, newest first, saved to ~/.local/state/lovelyrice/notifications.json
 //             (shown by NotificationPanel.qml). Do-not-disturb still records history, it only hides popups.
-//  - unread:  how many arrived since the history panel was last open (the badge on the sidebar bell).
+//  - unread:  how many arrived since the history panel was last open (the badge on the bar bell).
 //  - muted apps: no popup and not counted as unread, but still kept in the history. Saved to notif-muted.json.
 //    Critical notifications always get through, for both do-not-disturb and muted apps.
 // Only one program can own org.freedesktop.Notifications: stop mako / dunst / swaync / any other shell first.

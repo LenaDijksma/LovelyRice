@@ -140,9 +140,9 @@ PanelWindow {
             Row {
                 anchors { right: parent.right; top: parent.top; topMargin: -4 }
                 spacing: 2
-                SideButton { glyph: "‹"; implicitWidth: 32; implicitHeight: 32; onClicked: win.shiftMonths(-1) }
-                SideButton { glyph: "●"; implicitWidth: 32; implicitHeight: 32; onClicked: win.select(new Date()) }
-                SideButton { glyph: "›"; implicitWidth: 32; implicitHeight: 32; onClicked: win.shiftMonths(1) }
+                BarButton { glyph: "‹"; implicitWidth: 32; implicitHeight: 32; onClicked: win.shiftMonths(-1) }
+                BarButton { glyph: "●"; implicitWidth: 32; implicitHeight: 32; onClicked: win.select(new Date()) }
+                BarButton { glyph: "›"; implicitWidth: 32; implicitHeight: 32; onClicked: win.shiftMonths(1) }
             }
 
             Row {

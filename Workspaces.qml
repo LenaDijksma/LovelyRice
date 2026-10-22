@@ -3,13 +3,17 @@ import Quickshell
 import Quickshell.Hyprland
 
 // Normal workspaces: a generic icon for the kind of app inside, with one highlight that slides to the
-// active workspace. Special workspaces (scratchpads) sit below, icon only, after a thin divider.
+// active workspace. Special workspaces (scratchpads) follow, icon only, after a thin divider.
 // While a special workspace is open the normal highlight fades out.
-Column {
+// Runs down a left/right bar and across a top/bottom bar.
+Grid {
     id: root
     property string monitorName: ""
+    columns: root.horizontal ? 3 : 1       // normal | divider | special, in one row or one column
     spacing: 0
-    readonly property int gapY: 3
+    readonly property bool horizontal: Bar.horizontalFor(root)
+    readonly property int gapY: 3                          // space between workspace cells
+    readonly property int step: Theme.cell + gapY
 
     readonly property string special: Specials.byMonitor[monitorName] || ""
     readonly property var specialGlyphs: ({
@@ -82,30 +86,35 @@ Column {
     // ---- normal workspaces ----
     Item {
         id: normalBox
-        width: Theme.cell
-        height: Math.max(0, root.wsList.length * (Theme.cell + root.gapY) - root.gapY)
+        readonly property real len: Math.max(0, root.wsList.length * root.step - root.gapY)
+        width: root.horizontal ? len : Theme.cell
+        height: root.horizontal ? Theme.cell : len
+        Behavior on width  { NumberAnimation { duration: Theme.dur(260); easing.type: Easing.OutCubic } }
         Behavior on height { NumberAnimation { duration: Theme.dur(260); easing.type: Easing.OutCubic } }
 
         Rectangle {   // the one highlight; slides between workspaces, fades out for special workspaces
             width: Theme.cell; height: Theme.cell
-            radius: Theme.radiusSmall
+            radius: Theme.innerRadius
             visible: root.activeIndex >= 0
-            y: Math.max(0, root.activeIndex) * (Theme.cell + root.gapY)
+            x: root.horizontal ? Math.max(0, root.activeIndex) * root.step : 0
+            y: root.horizontal ? 0 : Math.max(0, root.activeIndex) * root.step
             color: Qt.alpha(Theme.accent, 0.22)
             border.color: Theme.accent
             border.width: 1.5
             opacity: root.special === "" ? 1 : 0
+            Behavior on x       { NumberAnimation { duration: Theme.dur(380); easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
             Behavior on y       { NumberAnimation { duration: Theme.dur(380); easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
             Behavior on opacity { NumberAnimation { duration: Theme.dur(220) } }
         }
 
-        Column {
-            spacing: root.gapY
+        Item {   // the cells; each one places itself by its index
+            anchors.fill: parent
             Repeater {
                 model: root.wsList
                 delegate: Item {
                     id: cell
                     required property var modelData
+                    required property int index
                     readonly property bool active: root.special === "" && root.activeIndex >= 0
                                                    && root.wsList[root.activeIndex].id === modelData.id
                     readonly property var wins: modelData.toplevels.values
@@ -113,6 +122,8 @@ Column {
                     readonly property string kind: cls !== "" ? root.kindFor(cls) : ""
                     property real appear: 0
 
+                    x: root.horizontal ? index * root.step : 0
+                    y: root.horizontal ? 0 : index * root.step
                     width: Theme.cell; height: Theme.cell
                     opacity: appear
                     scale: (0.5 + 0.5 * appear) * (area.pressed ? 0.9 : (area.containsMouse ? 1.08 : 1.0))
@@ -122,7 +133,7 @@ Column {
 
                     Rectangle {   // hover
                         anchors.fill: parent
-                        radius: Theme.radiusSmall
+                        radius: Theme.innerRadius
                         color: area.containsMouse && !cell.active ? Theme.surface : "transparent"
                         Behavior on color { ColorAnimation { duration: Theme.dur(150) } }
                     }
@@ -167,33 +178,40 @@ Column {
 
     // ---- divider ----
     Item {
-        width: Theme.cell
-        height: root.specList.length > 0 ? 12 : 0
+        property real thick: root.specList.length > 0 ? 12 : 0
+        width: root.horizontal ? thick : Theme.cell
+        height: root.horizontal ? Theme.cell : thick
         clip: true
-        Behavior on height { NumberAnimation { duration: Theme.dur(240); easing.type: Easing.OutCubic } }
+        Behavior on thick { NumberAnimation { duration: Theme.dur(240); easing.type: Easing.OutCubic } }
         Rectangle {
             anchors.centerIn: parent
-            width: Theme.cell * 0.5; height: 1
+            width: root.horizontal ? 1 : Theme.cell * 0.5
+            height: root.horizontal ? Theme.cell * 0.5 : 1
             color: Qt.alpha(Theme.dim, 0.5)
         }
     }
 
     // ---- special workspaces: icon only ----
-    Column {
-        spacing: root.gapY
+    Item {
+        readonly property real len: Math.max(0, root.specList.length * root.step - root.gapY)
+        width: root.horizontal ? len : Theme.cell
+        height: root.horizontal ? Theme.cell : len
         Repeater {
             model: root.specList
             delegate: Rectangle {
                 id: sc
                 required property var modelData
+                required property int index
                 readonly property string nm: modelData.name.replace(/^special:/, "")
                 readonly property bool active: root.special === modelData.name
                 readonly property string cls: root.firstClass(modelData, HyprSync.rev)
                 readonly property string kind: cls !== "" ? root.kindFor(cls) : ""
                 property real appear: 0
 
+                x: root.horizontal ? index * root.step : 0
+                y: root.horizontal ? 0 : index * root.step
                 width: Theme.cell; height: Theme.cell
-                radius: Theme.radiusSmall
+                radius: Theme.innerRadius
                 color: active ? Theme.accent2 : (sa.containsMouse ? Theme.surface : "transparent")
                 opacity: appear
                 scale: (0.5 + 0.5 * appear) * (sa.pressed ? 0.9 : (sa.containsMouse ? 1.08 : 1.0))

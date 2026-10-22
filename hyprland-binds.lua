@@ -29,6 +29,7 @@ hl.bind("SUPER + SHIFT + W",   hl.dsp.global("lovelyrice:wallpapers"))
 hl.bind("SUPER + ALT + C",     hl.dsp.global("lovelyrice:calendar"))
 hl.bind("SUPER + ALT + S",     hl.dsp.global("lovelyrice:settings"))
 hl.bind("SUPER + TAB",         hl.dsp.global("lovelyrice:overview"))   -- workspace overview with live previews
+hl.bind("SUPER + D",           hl.dsp.global("lovelyrice:dropdown"))   -- dropdown panel (dashboard, control center, media, notifications)
 hl.bind("SUPER + SHIFT + N",   hl.dsp.global("lovelyrice:nextTheme"))
 
 -- Screenshots and recording (also /screenshot, /screenshot-full, /record in the palette):

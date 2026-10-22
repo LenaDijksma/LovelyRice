@@ -3,15 +3,29 @@
 #
 #   lovelyrice                 start the shell (same as `lovelyrice start`)
 #   lovelyrice start|stop|restart|status
-#   lovelyrice toggle|settings|calendar|lock|overview|dashboard|control|media|keys|network|bluetooth
+#   lovelyrice toggle|settings|calendar|lock|overview|dashboard|control|media|keys|network|bluetooth|notifications|dropdown
 #   lovelyrice open <mode>     open the palette on a mode: scheme, wallpaper, clip, music, windows, doctor, ...
 #   lovelyrice theme <name|next>      set or cycle the theme
+#   lovelyrice bar [left|right|top|bottom]    move the utility bar (no argument: print where it is)
+#   lovelyrice bar hide|show|toggle|autohide  hide the bar, bring it back (`toggle` makes a good keybind), or slide it away until
+#                                             the pointer pushes against its edge
+#   lovelyrice look [name]                    apply a look: classic glass islands minimal flat neon dock stealth (no name: list them)
+#   lovelyrice split [on|off|toggle]          a second bar with its own edge and modules (set it up in /settings -> Split)
+#   lovelyrice bar2 [left|right|top|bottom]   where the second bar sits (no argument: print it)
+#   lovelyrice hypr [on|off|toggle|apply|log] Hyprland follows the theme: window borders, rounding, gaps, blur, shadow (/settings -> Hyprland)
+#   lovelyrice shaders         build the glass refraction shader (needs qsb from qt6-shadertools); glass blurs without it
+#   lovelyrice plugin [list]                  plugins (QML extensions, see PLUGINS.md). Nothing loads until you allow it:
+#   lovelyrice plugin install <git-url>       clone a plugin (loads nothing; shows where the code comes from)
+#   lovelyrice plugin new <name>              start a plugin from the example
+#   lovelyrice plugin allow|enable|disable|revoke|remove|update|info <name>
+#   lovelyrice plugin status|reload           what is running / look for changes now
 #   lovelyrice screenshot [region|screen]     lovelyrice record [region]
 #   lovelyrice music [toggle|next|prev]
 #   lovelyrice dnd|mic|power-profile|match-wallpaper|run-hooks
 #   lovelyrice sync            re-apply the theme to foot, GTK apps, fastfetch (what happens on every theme change)
 #   lovelyrice setup [foot|gtk|greet|all] [--remove]   hook the themed files into foot.ini, gtk.css and your shell rc
-#   lovelyrice fetch           fastfetch with the LovelyRice cat and theme colors
+#   lovelyrice fetch           fastfetch with the LovelyRice cat and theme colors; the layout (big cat, small cat, no cat)
+#                              follows the terminal width. LR_LAYOUT=full|compact|narrow forces one
 #   lovelyrice greet           what a new foot window runs (see `setup greet`): theme colors, then `fetch`
 #   lovelyrice colors          print the theme as terminal escape codes (recolors the terminal it is run in)
 #   lovelyrice logo            print the path of the themed SVG logo
@@ -24,17 +38,51 @@ set -u
 
 # These three must be fast and quiet (they run when a terminal opens), so they come before the shell lookup.
 state="$HOME/.local/state/lovelyrice"; gen="$state/generated"
+
+# Terminal width in columns ($LR_COLS overrides; 80 when it can't be read).
+lr_cols() {
+    c=${LR_COLS:-}
+    [ -n "$c" ] || c=$({ stty size </dev/tty; } 2>/dev/null | awk '{print $2}')
+    [ -n "$c" ] || c=$(tput cols 2>/dev/null)
+    case "$c" in ''|*[!0-9]*) c=80 ;; esac
+    echo "$c"
+}
+# A new window can still be resizing by the compositor while the shell starts: wait until the width stops changing.
+lr_cols_settled() {
+    [ -n "${LR_COLS:-}" ] && { lr_cols; return; }
+    prev=""; n=0
+    while [ "$n" -lt 5 ]; do
+        c=$(lr_cols); [ "$c" = "$prev" ] && break
+        prev=$c; n=$((n + 1)); sleep 0.03 2>/dev/null
+    done
+    echo "$c"
+}
+# The fastfetch config that fits: big cat -> small cat -> no cat (the minimum widths are in generated/fastfetch-layout)
+lr_config() {
+    case "${LR_LAYOUT:-}" in
+        full) echo "$gen/fastfetch.jsonc"; return ;;
+        compact|narrow) [ -f "$gen/fastfetch-$LR_LAYOUT.jsonc" ] && { echo "$gen/fastfetch-$LR_LAYOUT.jsonc"; return; } ;;
+    esac
+    if [ -f "$gen/fastfetch-layout" ] && [ -f "$gen/fastfetch-compact.jsonc" ] && [ -f "$gen/fastfetch-narrow.jsonc" ]; then
+        read -r need_full need_compact < "$gen/fastfetch-layout"
+        if [ "${1:-}" = settle ]; then cols=$(lr_cols_settled); else cols=$(lr_cols); fi
+        if [ "$cols" -ge "${need_full:-999}" ]; then echo "$gen/fastfetch.jsonc"; return; fi
+        if [ "$cols" -ge "${need_compact:-999}" ]; then echo "$gen/fastfetch-compact.jsonc"; return; fi
+        echo "$gen/fastfetch-narrow.jsonc"; return
+    fi
+    echo "$gen/fastfetch.jsonc"
+}
 case "${1:-}" in
     colors) [ -f "$gen/colors.osc" ] && cat "$gen/colors.osc"; exit 0 ;;
     greet)
         [ -f "$gen/colors.osc" ] && cat "$gen/colors.osc"
         [ -n "${LR_NO_FETCH:-}" ] && exit 0
-        [ -f "$gen/fastfetch.jsonc" ] && command -v fastfetch >/dev/null 2>&1 && exec fastfetch --config "$gen/fastfetch.jsonc"   # exec: "shell" shows your shell, not sh
+        [ -f "$gen/fastfetch.jsonc" ] && command -v fastfetch >/dev/null 2>&1 && exec fastfetch --config "$(lr_config settle)"   # exec: "shell" shows your shell, not sh
         exit 0 ;;
     fetch)
         command -v fastfetch >/dev/null 2>&1 || { echo "lovelyrice: fastfetch is not installed (sudo pacman -S fastfetch)" >&2; exit 1; }
         [ -f "$gen/fastfetch.jsonc" ] || { echo "lovelyrice: no fastfetch config yet - start LovelyRice (lovelyrice start) or run: lovelyrice sync" >&2; exit 1; }
-        shift; exec fastfetch --config "$gen/fastfetch.jsonc" "$@" ;;
+        shift; exec fastfetch --config "$(lr_config)" "$@" ;;
     logo)
         [ -f "$gen/logo.svg" ] && { echo "$gen/logo.svg"; exit 0; }
         echo "lovelyrice: no themed logo yet - start LovelyRice first (the plain one is assets/logo.svg)" >&2; exit 1 ;;
@@ -85,7 +133,7 @@ case "$cmd" in
         qs_ kill 2>/dev/null; sleep 0.3; nohup qs $sel >/dev/null 2>&1 & ;;
 
     toggle|palette)      rice toggle ;;
-    settings|calendar|lock|overview|dashboard|control|media|keys|network|bluetooth|notifications)
+    settings|calendar|lock|overview|dashboard|control|media|keys|network|bluetooth|notifications|dropdown)
                          rice "$cmd" ;;
     open)                [ $# -ge 1 ] || { echo "usage: lovelyrice open <mode>" >&2; exit 2; }; rice open "$1" ;;
     dnd|mic)             rice "$cmd" ;;
@@ -97,7 +145,50 @@ case "$cmd" in
         # apply the theme right away if the shell is up
         [ "${1:-}" != "--remove" ] && [ "$rc" = 0 ] && running && rice runHooks >/dev/null 2>&1
         exit $rc ;;
+    plugin|plugins)
+        sub="${1:-list}"; [ $# -gt 0 ] && shift
+        case "$sub" in
+            status)  running || { echo "LovelyRice is not running" >&2; exit 1; }; rice pluginStatus; exit $? ;;
+            reload)  rice pluginsReload; exit $? ;;
+            list|ls|info|path|install|new|allow|enable|disable|revoke|remove|rm|uninstall|update)
+                sh "$dir/scripts/plugins.sh" "$sub" "$@"; rc=$?
+                # let a running shell pick up the change (not needed for read-only commands)
+                case "$sub" in list|ls|info|path) ;; *) [ "$rc" = 0 ] && running && rice pluginsReload >/dev/null 2>&1 ;; esac
+                exit $rc ;;
+            *) echo "usage: lovelyrice plugin [list|info|install|new|allow|enable|disable|revoke|remove|update|status|reload] ..." >&2; exit 2 ;;
+        esac ;;
     scheme-maker)        rice schemeMaker ;;
+    bar)
+        case "${1:-}" in
+            "")                        rice bar ;;
+            left|right|top|bottom)     rice setBar "$1" ;;
+            hide|hidden)               rice setBarMode hidden ;;
+            show|always)               rice setBarMode always ;;
+            autohide|auto)             rice setBarMode autohide ;;
+            toggle)                    rice toggleBar ;;
+            *) echo "usage: lovelyrice bar [left|right|top|bottom|hide|show|toggle|autohide]" >&2; exit 2 ;;
+        esac ;;
+    bar2)
+        case "${1:-}" in
+            "")                        rice bar2 ;;
+            left|right|top|bottom)     rice setBar2 "$1" ;;
+            *) echo "usage: lovelyrice bar2 [left|right|top|bottom]" >&2; exit 2 ;;
+        esac ;;
+    look|style)
+        if [ -z "${1:-}" ]; then rice looks; else rice setLook "$1"; fi ;;
+    split)
+        case "${1:-toggle}" in
+            on|off|toggle)             rice split "${1:-toggle}" ;;
+            *) echo "usage: lovelyrice split [on|off|toggle]" >&2; exit 2 ;;
+        esac ;;
+    hypr)
+        case "${1:-toggle}" in
+            on|off|toggle)     rice hypr "${1:-toggle}" ;;
+            apply)             rice hyprApply ;;
+            log)               cat "$state/generated/last-hypr.log" 2>/dev/null || echo "no log yet (turn it on first: lovelyrice hypr on)" ;;
+            *) echo "usage: lovelyrice hypr [on|off|toggle|apply|log]" >&2; exit 2 ;;
+        esac ;;
+    shaders)             exec sh "$dir/scripts/build-shaders.sh" "$@" ;;
     screenshot)          rice screenshot "${1:-region}" ;;
     record)              if [ "${1:-}" = region ]; then rice record true; else rice record false; fi ;;
     music)               rice music "${1:-toggle}" ;;

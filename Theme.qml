@@ -24,6 +24,25 @@ Singleton {
     // ---- shape: identical across all themes ----
     readonly property int radius: Settings.radius
     readonly property int radiusSmall: Math.round(Settings.radius * 0.6)
+    // the bar and its module pills have their own rounding (Style tab); what sits inside a pill follows it, so the corners stay concentric
+    readonly property int barRadius: Settings.barRadius
+    readonly property int pillRadius: Settings.pillRadius
+    readonly property int innerRadius: Math.max(2, Settings.pillRadius - Settings.pillPadding)
+
+    // ---- the bar's look (Style tab) ----
+    readonly property bool glassBar: Settings.barStyle === "glass"
+    readonly property bool glassPill: Settings.pillStyle === "glass"
+    readonly property bool anyGlass: glassBar || glassPill
+    // background of a solid bar: the theme's own opacity scaled by the setting; none at all for a transparent or a glass bar
+    readonly property real barAlpha: Settings.barStyle === "solid" ? Math.min(1, opacity * Settings.barOpacity / 100) : 0
+    readonly property color barBorderTint: {
+        const b = Settings.barBorderColor
+        const c = b === "accent2" ? accent2 : (b === "text" ? fg : (b === "dim" ? dim : accent))
+        return Qt.alpha(c, Settings.barBorder > 0 ? Settings.barBorderOpacity / 100 : 0)
+    }
+    readonly property color barShadowTint: Settings.barShadowColor === "accent" ? accent : (Settings.barShadowColor === "accent2" ? accent2 : "black")
+    // a coloured shadow needs to be seen to be a glow, so it is stronger than a black one
+    readonly property real barShadowAmount: Math.min(1, shadowOpacity * (Settings.barShadow / 100) * (Settings.barShadowColor === "black" ? 1 : 1.25))
 
     Behavior on bg      { ColorAnimation { duration: root.dur(400) } }
     Behavior on surface { ColorAnimation { duration: root.dur(400) } }
@@ -41,14 +60,15 @@ Singleton {
     function dur(ms) { return Math.round(ms * animScale) }
 
     // ---- layout ----
-    readonly property int barWidth: Settings.sidebarWidth
+    readonly property int barThickness: Settings.barThickness   // across the bar: its width on a left/right bar, its height on a top/bottom bar
+    readonly property bool horizontal: Settings.barPosition === "top" || Settings.barPosition === "bottom"
     readonly property int gap: Settings.gap
     readonly property int shadowPad: 40
-    readonly property int sideMargin: 6            // sidebar edge -> pill
-    readonly property int pillPad: 5               // pill edge -> content
-    readonly property int cell: barWidth - 2 * sideMargin - 2 * pillPad   // one widget cell
+    readonly property int sideMargin: Settings.barPadding      // bar edge -> pill
+    readonly property int pillPad: Settings.pillPadding        // pill edge -> content
+    readonly property int cell: Math.max(18, barThickness - 2 * sideMargin - 2 * pillPad)   // one widget cell
     readonly property int iconSize: Math.round(cell * 0.62)
-    function fs(n) { return Math.max(7, Math.round(n * barWidth / 60)) }  // sidebar font size
+    function fs(n) { return Math.max(7, Math.round(n * barThickness / 60)) }  // bar font size
 
     // ---- wallpapers (drawn by Wallpaper.qml) ----
     property string themeWallpaper: ""
@@ -59,6 +79,26 @@ Singleton {
         Quickshell.env("HOME") + "/Pictures/wallpapers",
         Quickshell.shellPath("wallpapers")
     ]
+
+    // What the desktop actually shows. Normally the chosen wallpaper; while /wallpaper is open it is the row under
+    // the cursor (a preview: nothing is saved until Enter, Esc puts the old one back).
+    property bool previewActive: false
+    property string previewWallpaper: ""
+    readonly property string shownWallpaper: previewActive
+        ? (previewWallpaper !== "" ? previewWallpaper : themeWallpaper)
+        : wallpaper
+    function previewWp(path) { previewWallpaper = path; previewActive = true }
+    function clearWpPreview() { previewActive = false; previewWallpaper = "" }
+    property bool videoWarned: false
+
+    // still | anim (gif, animated webp: built into Qt) | video (needs qt6-multimedia)
+    function wallpaperKind(p) {
+        const m = /\.([A-Za-z0-9]+)$/.exec(p || "")
+        const e = m ? m[1].toLowerCase() : ""
+        if (e === "gif" || e === "webp") return "anim"
+        if (["mp4", "webm", "mkv", "mov", "m4v"].indexOf(e) >= 0) return "video"
+        return "still"
+    }
 
     // ---- theme discovery ----
     property var available: []
